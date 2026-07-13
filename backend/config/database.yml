@@ -17,8 +17,8 @@ test:
   <<: *default
   database: <%= ENV.fetch("DATABASE_NAME_TEST", "aicvp_test") %>
 
-# In production, DATABASE_URL (if present) is merged on top of these values by Rails.
+# In production, DATABASE_URL (if present) is automatically merged on top of
+# these discrete values by Rails, so it does not need to be listed here.
 production:
   <<: *default
   database: <%= ENV.fetch("DATABASE_NAME", "aicvp_production") %>
-  url: <%= ENV.fetch("DATABASE_URL", nil) %>

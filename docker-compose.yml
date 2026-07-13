@@ -56,6 +56,15 @@ services:
       - bundle_cache:/usr/local/bundle
     ports:
       - "${API_PORT_HOST:-3000}:3000"
+    healthcheck:
+      # Liveness (did Rails boot?) via the always-200 /up endpoint. The deep
+      # /api/v1/health check is intentionally NOT used here so a degraded
+      # dependency doesn't mark the container itself unhealthy.
+      test: ["CMD-SHELL", "curl -fsS http://localhost:3000/up >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 40s
     depends_on:
       postgres:
         condition: service_healthy
@@ -76,6 +85,10 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      # Start only after the API has booted (and run db:prepare), so the schema
+      # exists before any future database-touching job runs.
+      api:
+        condition: service_healthy
 
   web:
     build:
@@ -91,7 +104,8 @@ services:
     ports:
       - "${WEB_PORT_HOST:-5173}:5173"
     depends_on:
-      - api
+      api:
+        condition: service_healthy
 
 volumes:
   postgres_data:

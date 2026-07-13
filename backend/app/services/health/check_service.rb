@@ -26,12 +26,12 @@ module Health
 
     def check_redis
       redis = Redis.new(url: ENV.fetch("REDIS_URL", "redis://localhost:6379/0"))
-      result = redis.ping
-      redis.close
-      result == "PONG" ? Report::OK : Report::ERROR
+      redis.ping == "PONG" ? Report::OK : Report::ERROR
     rescue StandardError => e
       log_failure(:redis, e)
       Report::ERROR
+    ensure
+      redis&.close
     end
 
     def check_sidekiq
