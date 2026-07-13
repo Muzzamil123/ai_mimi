@@ -1,0 +1,16 @@
+# Environment files (never commit real secrets)
+.env
+.env.*
+!.env.example
+
+# OS / editor
+.DS_Store
+*.swp
+.idea/
+.vscode/
+
+# Logs
+*.log
+
+# Node (frontend deps are also ignored via frontend/.gitignore)
+node_modules/

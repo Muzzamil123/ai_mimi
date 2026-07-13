@@ -1,0 +1,38 @@
+source "https://rubygems.org"
+
+ruby "3.3.11"
+
+# --- Core framework ---
+gem "rails", "~> 7.1.6"
+gem "pg", "~> 1.5"            # PostgreSQL adapter
+gem "puma", ">= 5.0"          # Application/web server
+gem "bootsnap", require: false
+
+# --- API concerns ---
+gem "rack-cors", "~> 2.0"    # Cross-Origin Resource Sharing for the React clients
+gem "blueprinter", "~> 1.1"  # JSON serialization layer (keeps rendering out of controllers)
+gem "oj", "~> 3.16"          # Fast JSON encoding used by Blueprinter
+
+# --- Background processing ---
+gem "sidekiq", "~> 7.2"      # Background jobs
+gem "redis", "~> 5.0"        # Redis client (cache + Sidekiq backend)
+
+# --- Observability ---
+gem "lograge", "~> 0.14"     # Structured, single-line request logging
+
+# --- Configuration ---
+gem "dotenv-rails", "~> 3.1", groups: %i[development test]
+
+# Windows does not include zoneinfo files, so bundle the tzinfo-data gem
+gem "tzinfo-data", platforms: %i[windows jruby]
+
+group :development, :test do
+  gem "debug", platforms: %i[mri windows]
+  gem "rspec-rails", "~> 6.1"
+  gem "factory_bot_rails", "~> 6.4"
+  gem "rubocop-rails-omakase", require: false # Rails-standard linting/formatting
+end
+
+group :test do
+  gem "rspec_junit_formatter", "~> 0.6" # JUnit output for CI reporting
+end
