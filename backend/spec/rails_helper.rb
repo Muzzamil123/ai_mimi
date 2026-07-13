@@ -8,6 +8,9 @@ abort("The Rails environment is running in production mode!") if Rails.env.produ
 
 require "rspec/rails"
 
+# Use the cheapest bcrypt cost in the test suite for speed.
+ActiveModel::SecurePassword.min_cost = true
+
 # Load support files (shared contexts, helpers, configuration).
 Dir[Rails.root.join("spec", "support", "**", "*.rb")].sort.each { |f| require f }
 

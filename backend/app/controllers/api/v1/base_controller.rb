@@ -1,9 +1,38 @@
 module Api
   module V1
-    # Base controller for all versioned API endpoints. Cross-cutting concerns
-    # (authentication, authorization, error rendering, pagination) are added
-    # here in later phases so individual controllers stay thin.
+    # Base controller for all versioned API endpoints. Provides token
+    # authentication, Pundit authorization, the auth response helper, and a
+    # consistent JSON error envelope: { "error": { "code", "messages" } }.
     class BaseController < ApplicationController
+      include Authenticatable
+      include Pundit::Authorization
+      include TokenResponder
+
+      rescue_from ActiveRecord::RecordInvalid do |e|
+        render_error(:unprocessable_entity, "validation_failed", e.record.errors.full_messages)
+      end
+
+      rescue_from ActiveRecord::RecordNotFound do
+        render_error(:not_found, "not_found", "Resource not found")
+      end
+
+      rescue_from ActionController::ParameterMissing do |e|
+        render_error(:unprocessable_entity, "parameter_missing", e.message)
+      end
+
+      rescue_from Pundit::NotAuthorizedError do
+        render_error(:forbidden, "forbidden", "You are not permitted to perform this action")
+      end
+
+      rescue_from ::Auth::AuthenticationError do |e|
+        render_error(:unauthorized, "unauthorized", e.message)
+      end
+
+      private
+
+      def render_error(status, code, messages)
+        render json: { error: { code: code, messages: Array(messages) } }, status: status
+      end
     end
   end
 end

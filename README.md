@@ -8,10 +8,12 @@ prompt and four Google Labs renders (two 3:4, two 9:16, 15 seconds).
 This repository is being built **phase by phase** per
 [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md).
 
-> **Current status: Phase 1 — Repository, Rails API, React, and Local Development
-> Foundation.** This phase delivers the runnable technical foundation only
-> (health checks, tooling, Docker, CI). Authentication, projects, characters,
-> videos, and AI providers arrive in later phases.
+> **Current status: Phase 2 — Authentication, Authorization, Accounts & Roles**
+> (Phase 1 foundation complete). Delivered so far: health/tooling/Docker/CI
+> foundation, plus JWT auth (access + rotating refresh tokens), registration,
+> login/logout, password reset, email verification, account profile (`/me`),
+> role-based access control (user/admin), and rate limiting on auth endpoints.
+> Projects, characters, videos, and AI providers arrive in later phases.
 
 ---
 
@@ -104,6 +106,32 @@ the app version. Returns `200` when healthy, `503` when any dependency is down.
 
 ---
 
+## Authentication
+
+JWT-based auth designed to serve both the React portal and future mobile apps:
+a short-lived **access token** (15 min, HS256) plus a long-lived **refresh
+token** (30 days) stored hashed and **rotated** on every refresh (revocable for
+real logout). Email verification and password-reset use stateless, expiring
+tokens. Roles: `user`, `admin`.
+
+| Method | Path | Auth | Purpose |
+|---|---|---|---|
+| POST | `/api/v1/auth/register` | public | Create account, returns tokens |
+| POST | `/api/v1/auth/login` | public | Authenticate, returns tokens |
+| POST | `/api/v1/auth/logout` | public | Revoke a refresh token |
+| POST | `/api/v1/auth/refresh` | public | Rotate tokens |
+| POST | `/api/v1/auth/password/forgot` | public | Send reset email (always 202) |
+| POST | `/api/v1/auth/password/reset` | public | Set new password via token |
+| POST | `/api/v1/auth/email/verify` | public | Verify email via token |
+| GET/PATCH/DELETE | `/api/v1/me` | user | View / update / delete own account |
+| GET | `/api/v1/admin/users` | admin | List users (RBAC) |
+
+Send the access token as `Authorization: Bearer <token>`. Auth endpoints are
+rate-limited (Rack::Attack). In development, outbound emails open in the browser
+via `letter_opener`.
+
+---
+
 ## Running tests
 
 **Everything, in containers:**
@@ -144,6 +172,9 @@ the full list. Key variables:
 | `REDIS_URL`         | Redis connection URL                     | `redis://localhost:6379/0`       |
 | `CORS_ORIGINS`      | Comma-separated allowed frontend origins | `http://localhost:5173`          |
 | `APP_VERSION`       | Version reported by `/health`            | `0.1.0`                          |
+| `JWT_SECRET`        | Secret for signing JWT access tokens     | Rails `secret_key_base`          |
+| `FRONTEND_URL`      | Base URL used to build links in emails   | `http://localhost:5173`          |
+| `MAIL_FROM`         | Default From address for outbound email  | `no-reply@aicvp.local`           |
 | `VITE_API_BASE_URL` | API base URL used by the frontend        | `http://localhost:3000/api/v1`   |
 
 ---

@@ -1,0 +1,39 @@
+# Rate limiting / brute-force protection for authentication endpoints.
+# NOTE: uses a per-process in-memory store for now. Phase 13 (security hardening)
+# moves this to a shared Redis-backed store so limits are enforced across all
+# processes; that also resolves the ActiveSupport RedisCacheStore/connection_pool
+# incompatibility present in this dependency set.
+class Rack::Attack
+  cache.store = ActiveSupport::Cache::MemoryStore.new
+
+  throttle("auth/login/ip", limit: 10, period: 60) do |req|
+    req.ip if req.post? && req.path == "/api/v1/auth/login"
+  end
+
+  throttle("auth/register/ip", limit: 10, period: 3600) do |req|
+    req.ip if req.post? && req.path == "/api/v1/auth/register"
+  end
+
+  throttle("auth/refresh/ip", limit: 60, period: 60) do |req|
+    req.ip if req.post? && req.path == "/api/v1/auth/refresh"
+  end
+
+  throttle("auth/password_forgot/ip", limit: 5, period: 3600) do |req|
+    req.ip if req.post? && req.path == "/api/v1/auth/password/forgot"
+  end
+
+  throttle("auth/email_verify/ip", limit: 20, period: 3600) do |req|
+    req.ip if req.post? && req.path == "/api/v1/auth/email/verify"
+  end
+
+  # Consistent JSON error envelope for throttled requests.
+  self.throttled_responder = lambda do |_request|
+    body = { error: { code: "rate_limited", messages: ["Too many requests. Please slow down and try again later."] } }
+    [429, { "Content-Type" => "application/json" }, [body.to_json]]
+  end
+end
+
+# Disabled during tests except where a spec explicitly enables it.
+Rack::Attack.enabled = !Rails.env.test?
+
+Rails.application.config.middleware.use Rack::Attack
