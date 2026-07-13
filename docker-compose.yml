@@ -1,0 +1,113 @@
+name: aicvp
+
+# Local development stack: PostgreSQL, Redis, Rails API, Sidekiq worker, React app.
+# Host ports for Postgres/Redis are intentionally non-default to avoid clashing
+# with services already running on the host; containers talk to each other over
+# the compose network using service names.
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: ${DATABASE_USERNAME:-aicvp}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD:-aicvp_password}
+      POSTGRES_DB: ${DATABASE_NAME:-aicvp_development}
+    ports:
+      - "${DATABASE_PORT_HOST:-5433}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DATABASE_USERNAME:-aicvp}"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "${REDIS_PORT_HOST:-6380}:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  api:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/backend.dev.Dockerfile
+    command: bash -lc "bundle exec rails db:prepare && bundle exec rails server -b 0.0.0.0 -p 3000"
+    environment: &backend_env
+      RAILS_ENV: development
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5432
+      DATABASE_USERNAME: ${DATABASE_USERNAME:-aicvp}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD:-aicvp_password}
+      DATABASE_NAME: ${DATABASE_NAME:-aicvp_development}
+      DATABASE_NAME_TEST: ${DATABASE_NAME_TEST:-aicvp_test}
+      REDIS_URL: redis://redis:6379/0
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173}
+      APP_VERSION: ${APP_VERSION:-0.1.0}
+    volumes:
+      - ./backend:/rails
+      - bundle_cache:/usr/local/bundle
+    ports:
+      - "${API_PORT_HOST:-3000}:3000"
+    healthcheck:
+      # Liveness (did Rails boot?) via the always-200 /up endpoint. The deep
+      # /api/v1/health check is intentionally NOT used here so a degraded
+      # dependency doesn't mark the container itself unhealthy.
+      test: ["CMD-SHELL", "curl -fsS http://localhost:3000/up >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 40s
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  sidekiq:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/backend.dev.Dockerfile
+    command: bundle exec sidekiq
+    environment: *backend_env
+    volumes:
+      - ./backend:/rails
+      - bundle_cache:/usr/local/bundle
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      # Start only after the API has booted (and run db:prepare), so the schema
+      # exists before any future database-touching job runs.
+      api:
+        condition: service_healthy
+
+  web:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/frontend.dev.Dockerfile
+    command: npm run dev -- --host 0.0.0.0
+    environment:
+      VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:3000/api/v1}
+      VITE_APP_NAME: ${VITE_APP_NAME:-AI Character Video Platform}
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    ports:
+      - "${WEB_PORT_HOST:-5173}:5173"
+    depends_on:
+      api:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
+  redis_data:
+  bundle_cache:
