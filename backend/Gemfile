@@ -20,6 +20,12 @@ gem "redis", "~> 5.0"        # Redis client (cache + Sidekiq backend)
 # --- Observability ---
 gem "lograge", "~> 0.14"     # Structured, single-line request logging
 
+# --- Authentication & authorization ---
+gem "bcrypt", "~> 3.1.20" # has_secure_password
+gem "jwt", "~> 2.9"       # access-token (JWT) encode/decode
+gem "pundit", "~> 2.4"      # role/resource authorization policies
+gem "rack-attack", "~> 6.7" # rate limiting / brute-force protection
+
 # --- Configuration ---
 gem "dotenv-rails", "~> 3.1", groups: %i[development test]
 
@@ -31,6 +37,10 @@ group :development, :test do
   gem "rspec-rails", "~> 6.1"
   gem "factory_bot_rails", "~> 6.4"
   gem "rubocop-rails-omakase", require: false # Rails-standard linting/formatting
+end
+
+group :development do
+  gem "letter_opener", "~> 1.10" # preview outbound email in the browser during development
 end
 
 group :test do

@@ -1,13 +1,40 @@
 import { Route, Routes } from 'react-router-dom'
 import { AppLayout } from '../components/layout/AppLayout'
+import { AdminUsersPage } from '../pages/admin/AdminUsersPage'
+import { ForgotPasswordPage } from '../pages/auth/ForgotPasswordPage'
+import { LoginPage } from '../pages/auth/LoginPage'
+import { ProfilePage } from '../pages/auth/ProfilePage'
+import { RegisterPage } from '../pages/auth/RegisterPage'
+import { ResetPasswordPage } from '../pages/auth/ResetPasswordPage'
+import { VerifyEmailPage } from '../pages/auth/VerifyEmailPage'
 import { HealthPage } from '../pages/HealthPage'
 import { NotFoundPage } from '../pages/NotFoundPage'
+import { AdminRoute } from './AdminRoute'
+import { ProtectedRoute } from './ProtectedRoute'
 
 export function AppRoutes() {
   return (
     <Routes>
       <Route element={<AppLayout />}>
         <Route index element={<HealthPage />} />
+
+        {/* Public auth routes */}
+        <Route path="login" element={<LoginPage />} />
+        <Route path="register" element={<RegisterPage />} />
+        <Route path="forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="reset-password" element={<ResetPasswordPage />} />
+        <Route path="verify-email" element={<VerifyEmailPage />} />
+
+        {/* Authenticated routes */}
+        <Route element={<ProtectedRoute />}>
+          <Route path="profile" element={<ProfilePage />} />
+        </Route>
+
+        {/* Admin-only routes */}
+        <Route element={<AdminRoute />}>
+          <Route path="admin/users" element={<AdminUsersPage />} />
+        </Route>
+
         <Route path="*" element={<NotFoundPage />} />
       </Route>
     </Routes>

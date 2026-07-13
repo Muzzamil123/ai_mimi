@@ -51,6 +51,9 @@ services:
       REDIS_URL: redis://redis:6379/0
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173}
       APP_VERSION: ${APP_VERSION:-0.1.0}
+      JWT_SECRET: ${JWT_SECRET:-dev_super_secret_change_me}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
+      MAIL_FROM: ${MAIL_FROM:-AI Character Video Platform <no-reply@aicvp.local>}
     volumes:
       - ./backend:/rails
       - bundle_cache:/usr/local/bundle

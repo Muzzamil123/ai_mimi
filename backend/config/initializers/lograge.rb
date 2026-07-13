@@ -8,10 +8,16 @@ Rails.application.configure do
     { request_id: controller.request.request_id }
   end
 
+  # IMPORTANT: lograge replaces Rails' default log subscriber, so it does NOT
+  # apply `config.filter_parameters` automatically. We must filter params here
+  # ourselves, otherwise passwords / tokens would be logged in cleartext.
+  parameter_filter = ActiveSupport::ParameterFilter.new(Rails.application.config.filter_parameters)
+
   config.lograge.custom_options = lambda do |event|
+    params = event.payload[:params]&.except("controller", "action", "format")
     {
       time: event.time.iso8601,
-      params: event.payload[:params]&.except("controller", "action", "format"),
+      params: params && parameter_filter.filter(params)
     }
   end
 end
