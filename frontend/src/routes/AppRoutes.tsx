@@ -9,6 +9,10 @@ import { ResetPasswordPage } from '../pages/auth/ResetPasswordPage'
 import { VerifyEmailPage } from '../pages/auth/VerifyEmailPage'
 import { HealthPage } from '../pages/HealthPage'
 import { NotFoundPage } from '../pages/NotFoundPage'
+import { EditProjectPage } from '../pages/projects/EditProjectPage'
+import { NewProjectPage } from '../pages/projects/NewProjectPage'
+import { ProjectDetailPage } from '../pages/projects/ProjectDetailPage'
+import { ProjectsListPage } from '../pages/projects/ProjectsListPage'
 import { AdminRoute } from './AdminRoute'
 import { ProtectedRoute } from './ProtectedRoute'
 
@@ -28,6 +32,10 @@ export function AppRoutes() {
         {/* Authenticated routes */}
         <Route element={<ProtectedRoute />}>
           <Route path="profile" element={<ProfilePage />} />
+          <Route path="projects" element={<ProjectsListPage />} />
+          <Route path="projects/new" element={<NewProjectPage />} />
+          <Route path="projects/:id" element={<ProjectDetailPage />} />
+          <Route path="projects/:id/edit" element={<EditProjectPage />} />
         </Route>
 
         {/* Admin-only routes */}

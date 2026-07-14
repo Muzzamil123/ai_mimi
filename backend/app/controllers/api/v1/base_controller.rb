@@ -16,6 +16,10 @@ module Api
         render_error(:not_found, "not_found", "Resource not found")
       end
 
+      rescue_from ActiveRecord::RecordNotUnique do
+        render_error(:unprocessable_entity, "conflict", "That record already exists; please retry")
+      end
+
       rescue_from ActionController::ParameterMissing do |e|
         render_error(:unprocessable_entity, "parameter_missing", e.message)
       end
@@ -26,6 +30,10 @@ module Api
 
       rescue_from ::Auth::AuthenticationError do |e|
         render_error(:unauthorized, "unauthorized", e.message)
+      end
+
+      rescue_from ::Projects::InvalidTransition do |e|
+        render_error(:unprocessable_entity, "invalid_transition", e.message)
       end
 
       private

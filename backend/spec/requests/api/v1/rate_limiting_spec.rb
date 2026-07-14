@@ -1,10 +1,14 @@
 require "rails_helper"
 
 RSpec.describe "Rate limiting (Rack::Attack)", type: :request do
+  include ActiveSupport::Testing::TimeHelpers
+
   around do |example|
     Rack::Attack.enabled = true
     Rack::Attack.cache.store.clear
-    example.run
+    # Freeze time so every request falls in the same throttle window (otherwise
+    # requests can straddle a period boundary and reset the counter).
+    freeze_time { example.run }
   ensure
     Rack::Attack.enabled = false
     Rack::Attack.cache.store.clear
