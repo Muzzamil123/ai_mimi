@@ -25,6 +25,14 @@ Rails.application.routes.draw do
       patch "me", to: "current_user#update"
       delete "me", to: "current_user#destroy"
 
+      # --- Projects ---
+      resources :projects, only: %i[index show create update destroy] do
+        member do
+          post :archive
+          post :restore
+        end
+      end
+
       # --- Admin (RBAC; full portal in Phase 11) ---
       namespace :admin do
         resources :users, only: [:index]

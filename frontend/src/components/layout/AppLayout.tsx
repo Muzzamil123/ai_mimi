@@ -34,6 +34,7 @@ export function AppLayout() {
           {isAuthenticated && (
             <>
               {isAdmin && <NavLink to="/admin/users">Admin</NavLink>}
+              <NavLink to="/projects">Projects</NavLink>
               <NavLink to="/profile">Profile</NavLink>
               <span className="app-greeting">Hi, {user?.name}</span>
               <button type="button" className="link-button" onClick={() => void handleLogout()}>

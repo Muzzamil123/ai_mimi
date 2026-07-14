@@ -2,6 +2,7 @@ class User < ApplicationRecord
   has_secure_password
 
   has_many :refresh_tokens, dependent: :destroy
+  has_many :projects, dependent: :destroy
 
   enum :role, { user: 0, admin: 1 }, default: :user
   enum :status, { active: 0, suspended: 1, deleted: 2 }, default: :active, prefix: :status

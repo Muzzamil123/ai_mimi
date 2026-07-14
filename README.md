@@ -8,12 +8,13 @@ prompt and four Google Labs renders (two 3:4, two 9:16, 15 seconds).
 This repository is being built **phase by phase** per
 [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md).
 
-> **Current status: Phase 2 — Authentication, Authorization, Accounts & Roles**
-> (Phase 1 foundation complete). Delivered so far: health/tooling/Docker/CI
-> foundation, plus JWT auth (access + rotating refresh tokens), registration,
-> login/logout, password reset, email verification, account profile (`/me`),
-> role-based access control (user/admin), and rate limiting on auth endpoints.
-> Projects, characters, videos, and AI providers arrive in later phases.
+> **Current status: Phase 3 — Project Domain & Lifecycle** (Phases 1–2 complete).
+> Delivered so far: health/tooling/Docker/CI foundation; JWT auth (access +
+> rotating refresh tokens), registration, login/logout, password reset, email
+> verification, `/me`, RBAC (user/admin), auth rate limiting; and **project
+> management** — CRUD, per-user unique slugs, a guarded status lifecycle with
+> history, archive/restore, ownership enforcement, and list search/filter/
+> pagination. Characters, videos, and AI providers arrive in later phases.
 
 ---
 
@@ -125,6 +126,26 @@ tokens. Roles: `user`, `admin`.
 | POST | `/api/v1/auth/email/verify` | public | Verify email via token |
 | GET/PATCH/DELETE | `/api/v1/me` | user | View / update / delete own account |
 | GET | `/api/v1/admin/users` | admin | List users (RBAC) |
+
+## Projects
+
+Each user owns projects that move through a guarded status lifecycle
+(`draft → initializing_character → awaiting_character_approval →
+character_rejected → ready → failed`, plus `archived`). Every transition is
+recorded in a status-history log. Editing and deleting are restricted to
+`draft`; other projects are archived/restored instead. One character per
+project is set up structurally now (`active_character_id`) and populated in
+Phase 4.
+
+| Method | Path | Purpose |
+|---|---|---|
+| GET | `/api/v1/projects?q=&status=&page=&per_page=` | List own projects (search/filter/paginate) |
+| POST | `/api/v1/projects` | Create a draft project |
+| GET | `/api/v1/projects/:id` | Show project + status history |
+| PATCH | `/api/v1/projects/:id` | Update (draft only) |
+| DELETE | `/api/v1/projects/:id` | Delete (draft only) |
+| POST | `/api/v1/projects/:id/archive` | Archive |
+| POST | `/api/v1/projects/:id/restore` | Restore to pre-archive status |
 
 Send the access token as `Authorization: Bearer <token>`. Auth endpoints are
 rate-limited (Rack::Attack). In development, outbound emails open in the browser
