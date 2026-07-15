@@ -16,6 +16,9 @@ gem "oj", "~> 3.16"          # Fast JSON encoding used by Blueprinter
 # --- Background processing ---
 gem "sidekiq", "~> 7.2"      # Background jobs
 gem "redis", "~> 5.0"        # Redis client (cache + Sidekiq backend)
+# connection_pool 3.x changed TimedStack#pop's signature, which breaks Sidekiq
+# 7.3's scheduler (retries/scheduled jobs). Pin to the compatible 2.x line.
+gem "connection_pool", "~> 2.5"
 
 # --- Observability ---
 gem "lograge", "~> 0.14"     # Structured, single-line request logging
@@ -45,4 +48,5 @@ end
 
 group :test do
   gem "rspec_junit_formatter", "~> 0.6" # JUnit output for CI reporting
+  gem "webmock", "~> 3.23"              # stub external provider HTTP in adapter specs
 end

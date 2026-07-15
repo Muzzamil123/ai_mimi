@@ -1,7 +1,9 @@
 class Project < ApplicationRecord
   belongs_to :user
-  # `active_character_id` is populated in Phase 4; the belongs_to :active_character
-  # association is added then, once the Character model exists.
+  belongs_to :active_character, class_name: "Character", optional: true
+  # A project owns exactly one character (enforced by a unique index on
+  # characters.project_id). `active_character` points at it once approved.
+  has_one :character, dependent: :destroy
   has_many :status_changes,
            -> { order(created_at: :asc) },
            class_name: "ProjectStatusChange",
@@ -28,7 +30,7 @@ class Project < ApplicationRecord
     "awaiting_character_approval" => %w[ready character_rejected archived],
     "character_rejected" => %w[initializing_character archived],
     "ready" => %w[archived],
-    "failed" => %w[draft archived],
+    "failed" => %w[draft initializing_character archived],
     "archived" => %w[draft initializing_character awaiting_character_approval character_rejected ready failed]
   }.freeze
 

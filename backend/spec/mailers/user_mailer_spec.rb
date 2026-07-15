@@ -26,4 +26,20 @@ RSpec.describe UserMailer, type: :mailer do
       expect(mail.body.encoded).to include("reset-token-456")
     end
   end
+
+  describe "character_approval" do
+    let(:project) { create(:project, user: user, name: "Baby Shark") }
+    let(:character) { create(:character, project: project, name: "Sharky") }
+    let(:mail) { described_class.character_approval(character) }
+
+    it "is sent to the authenticated account owner's email" do
+      expect(mail.to).to eq([ "m@example.com" ])
+      expect(mail.subject).to match(/ready for approval/i)
+    end
+
+    it "links to the project's character review page" do
+      expect(mail.body.encoded).to include("/projects/#{project.id}/character")
+      expect(mail.body.encoded).to include("Sharky")
+    end
+  end
 end

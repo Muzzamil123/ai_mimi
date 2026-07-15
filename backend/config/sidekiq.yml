@@ -1,0 +1,8 @@
+# Queues Sidekiq processes, highest priority first. `bundle exec sidekiq` loads
+# this file automatically. AI generation runs on its own queue so slow provider
+# calls never starve fast, latency-sensitive work.
+:concurrency: <%= ENV.fetch("SIDEKIQ_CONCURRENCY", 5) %>
+:queues:
+  - default
+  - mailers
+  - ai_generation

@@ -1,0 +1,9 @@
+Your character is ready, <%= @user.name %>!
+
+We generated the character "<%= @character.name %>" for your project
+"<%= @project.name %>". Please review and approve it before generating videos:
+
+<%= @review_url %>
+
+If the character isn't quite right, you can reject it with feedback and
+regenerate a new one — no video can be generated until a character is approved.
