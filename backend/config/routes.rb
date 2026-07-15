@@ -31,6 +31,15 @@ Rails.application.routes.draw do
           post :archive
           post :restore
         end
+
+        # A project owns exactly one character (singular nested resource).
+        resource :character, only: %i[show create update destroy], controller: "characters" do
+          post :generate
+          post :approve
+          post :reject
+          post :reset
+          get :image
+        end
       end
 
       # --- Admin (RBAC; full portal in Phase 11) ---

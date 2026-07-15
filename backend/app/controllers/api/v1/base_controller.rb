@@ -36,6 +36,14 @@ module Api
         render_error(:unprocessable_entity, "invalid_transition", e.message)
       end
 
+      rescue_from ::Characters::InvalidTransition do |e|
+        render_error(:unprocessable_entity, "invalid_transition", e.message)
+      end
+
+      rescue_from ::Characters::InvalidState do |e|
+        render_error(:unprocessable_entity, "invalid_state", e.message)
+      end
+
       private
 
       def render_error(status, code, messages)

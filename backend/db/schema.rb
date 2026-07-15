@@ -10,10 +10,50 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_07_15_100002) do
+ActiveRecord::Schema[7.1].define(version: 2026_07_16_100003) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "citext"
   enable_extension "plpgsql"
+
+  create_table "character_images", force: :cascade do |t|
+    t.bigint "character_id", null: false
+    t.string "storage_key", null: false
+    t.string "original_filename"
+    t.string "mime_type"
+    t.integer "width"
+    t.integer "height"
+    t.bigint "file_size"
+    t.string "checksum"
+    t.string "provider_asset_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["character_id"], name: "index_character_images_on_character_id"
+    t.index ["storage_key"], name: "index_character_images_on_storage_key", unique: true
+  end
+
+  create_table "characters", force: :cascade do |t|
+    t.bigint "project_id", null: false
+    t.string "name", null: false
+    t.text "description"
+    t.jsonb "character_attributes", default: {}, null: false
+    t.jsonb "style_preferences", default: {}, null: false
+    t.integer "status", default: 0, null: false
+    t.string "provider"
+    t.string "provider_model"
+    t.string "provider_job_id"
+    t.decimal "estimated_cost", precision: 12, scale: 6
+    t.text "generation_prompt"
+    t.uuid "generation_id"
+    t.string "failure_reason"
+    t.text "rejection_feedback"
+    t.datetime "approved_at"
+    t.datetime "rejected_at"
+    t.datetime "locked_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["project_id"], name: "index_characters_on_project_id_unique", unique: true
+    t.index ["status"], name: "index_characters_on_status"
+  end
 
   create_table "project_status_changes", force: :cascade do |t|
     t.bigint "project_id", null: false
@@ -72,8 +112,11 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_15_100002) do
     t.index ["email"], name: "index_users_on_email", unique: true
   end
 
+  add_foreign_key "character_images", "characters", on_delete: :cascade
+  add_foreign_key "characters", "projects", on_delete: :cascade
   add_foreign_key "project_status_changes", "projects", on_delete: :cascade
   add_foreign_key "project_status_changes", "users", column: "actor_id", on_delete: :nullify
+  add_foreign_key "projects", "characters", column: "active_character_id", on_delete: :nullify
   add_foreign_key "projects", "users"
   add_foreign_key "refresh_tokens", "users", on_delete: :cascade
 end

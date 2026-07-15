@@ -398,6 +398,35 @@ button.danger:hover {
   color: var(--muted);
 }
 
+/* --- Character workspace --- */
+.character-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin: 1rem 0;
+}
+.character-preview__image {
+  max-width: 100%;
+  height: auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fff;
+  image-rendering: pixelated;
+  max-height: 480px;
+}
+.character-preview__meta {
+  color: var(--muted);
+  font-size: 0.85rem;
+  margin-top: 0.4rem;
+}
+.approval-status {
+  color: var(--ok);
+  font-weight: 600;
+}
+.generation-progress {
+  margin: 1.5rem 0;
+}
+
 .status-history {
   margin-top: 1.5rem;
 }

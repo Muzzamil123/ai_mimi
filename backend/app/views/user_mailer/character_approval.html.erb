@@ -1,0 +1,19 @@
+<h1>Your character is ready, <%= @user.name %>!</h1>
+
+<p>
+  We generated the character <strong><%= @character.name %></strong> for your
+  project <strong><%= @project.name %></strong>. Please review it and approve it
+  before you start generating videos.
+</p>
+
+<p>
+  <a href="<%= @review_url %>">Review and approve your character</a>
+</p>
+
+<p>Or paste this link into your browser:</p>
+<p><%= @review_url %></p>
+
+<p>
+  If the character isn't quite right, you can reject it with feedback and
+  regenerate a new one — no video can be generated until a character is approved.
+</p>

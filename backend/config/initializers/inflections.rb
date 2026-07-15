@@ -14,3 +14,10 @@
 # ActiveSupport::Inflector.inflections(:en) do |inflect|
 #   inflect.acronym "RESTful"
 # end
+
+# Acronyms so Zeitwerk autoloads provider adapters with correct constant names
+# (e.g. app/services/character_prompt_providers/open_ai.rb -> OpenAI).
+ActiveSupport::Inflector.inflections(:en) do |inflect|
+  inflect.acronym "AI"
+  inflect.acronym "OpenAI"
+end

@@ -8,13 +8,18 @@ prompt and four Google Labs renders (two 3:4, two 9:16, 15 seconds).
 This repository is being built **phase by phase** per
 [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md).
 
-> **Current status: Phase 3 — Project Domain & Lifecycle** (Phases 1–2 complete).
+> **Current status: Phase 4 — Gemini Character Generation** (Phases 1–3 complete).
 > Delivered so far: health/tooling/Docker/CI foundation; JWT auth (access +
 > rotating refresh tokens), registration, login/logout, password reset, email
-> verification, `/me`, RBAC (user/admin), auth rate limiting; and **project
+> verification, `/me`, RBAC (user/admin), auth rate limiting; **project
 > management** — CRUD, per-user unique slugs, a guarded status lifecycle with
 > history, archive/restore, ownership enforcement, and list search/filter/
-> pagination. Characters, videos, and AI providers arrive in later phases.
+> pagination; and **character generation** — one character per project via a
+> Gemini image adapter, an async Sidekiq pipeline (prompt → image → store →
+> approval email), secure storage behind a storage abstraction, an
+> approve/reject/regenerate lifecycle with a locked approved character and an
+> audited admin reset, and a React character workspace. Videos and the remaining
+> providers arrive in later phases.
 
 ---
 
@@ -47,9 +52,11 @@ This repository is being built **phase by phase** per
 
 ### Design principles
 
-- **Provider abstraction** — all AI/storage/email vendors sit behind adapter
-  interfaces (introduced in later phases); no provider SDK is ever called from a
-  controller.
+- **Provider abstraction** — all AI/storage vendors sit behind adapter
+  interfaces (`CharacterImageProviders`, `CharacterPromptProviders`, `Storage`);
+  no provider SDK is ever called from a controller. Providers are selected by
+  env var, defaulting to hermetic fakes in dev/test so the app runs without
+  external credentials.
 - **Service objects** — business logic lives in `app/services`, keeping
   controllers and models thin (see `Health::CheckService`).
 - **Serialization layer** — JSON responses are produced by Blueprinter
@@ -151,6 +158,36 @@ Send the access token as `Authorization: Bearer <token>`. Auth endpoints are
 rate-limited (Rack::Attack). In development, outbound emails open in the browser
 via `letter_opener`.
 
+## Characters
+
+Each project owns **exactly one** character (enforced by a unique index).
+Generation is a fully asynchronous Sidekiq pipeline —
+`GenerateCharacterPromptJob → GenerateCharacterImageJob →
+DownloadCharacterImageJob → SendCharacterApprovalEmailJob` — where the prompt is
+built via the prompt provider (OpenAI in production), the image via the Gemini
+adapter, the asset stored via the storage abstraction, and an approval email is
+sent to the authenticated owner. Every job is idempotent and keyed by a rotating
+`generation_id`, so stale or duplicate jobs safely no-op.
+
+The character status machine (`pending → generating → awaiting_approval →
+approved`, with `rejected`/`failed` branches) is kept in lock-step with the
+project status. An approved character is **locked** and becomes the project's
+active character; only an administrator can reset it (an audited operation).
+Generated image bytes are served through an authenticated download endpoint —
+storage keys are never exposed.
+
+| Method | Path | Auth | Purpose |
+|---|---|---|---|
+| GET | `/api/v1/projects/:id/character` | owner/admin | Show the character |
+| POST | `/api/v1/projects/:id/character` | owner/admin | Set up the character (draft project) |
+| PATCH | `/api/v1/projects/:id/character` | owner/admin | Edit before generation |
+| DELETE | `/api/v1/projects/:id/character` | owner/admin | Delete (unless approved) |
+| POST | `/api/v1/projects/:id/character/generate` | owner/admin | Start / regenerate generation (202) |
+| POST | `/api/v1/projects/:id/character/approve` | owner/admin | Approve & lock |
+| POST | `/api/v1/projects/:id/character/reject` | owner/admin | Reject with optional feedback |
+| POST | `/api/v1/projects/:id/character/reset` | admin | Audited reset of a locked character |
+| GET | `/api/v1/projects/:id/character/image` | owner/admin | Stream the latest image |
+
 ---
 
 ## Running tests
@@ -197,6 +234,14 @@ the full list. Key variables:
 | `FRONTEND_URL`      | Base URL used to build links in emails   | `http://localhost:5173`          |
 | `MAIL_FROM`         | Default From address for outbound email  | `no-reply@aicvp.local`           |
 | `VITE_API_BASE_URL` | API base URL used by the frontend        | `http://localhost:3000/api/v1`   |
+| `STORAGE_BACKEND`   | Storage adapter (`local`)                | `local`                          |
+| `STORAGE_ROOT`      | Root dir for local storage               | `backend/storage`                |
+| `CHARACTER_IMAGE_PROVIDER`  | Image provider (`gemini`/`fake`) | `fake` (dev/test), `gemini` (prod) |
+| `CHARACTER_PROMPT_PROVIDER` | Prompt provider (`openai`/`local`) | `local` (dev/test), `openai` (prod) |
+| `GEMINI_API_KEY`    | Google Gemini API key (image generation) | — (required in production)       |
+| `GEMINI_IMAGE_MODEL`| Gemini image model                       | `gemini-2.5-flash-image`         |
+| `OPENAI_API_KEY`    | OpenAI API key (prompt generation)       | — (required in production)       |
+| `SIDEKIQ_CONCURRENCY` | Sidekiq worker threads                 | `5`                              |
 
 ---
 

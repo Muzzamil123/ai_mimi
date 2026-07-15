@@ -131,6 +131,11 @@ export function ProjectDetailPage() {
               Edit
             </button>
           )}
+          {!isArchived && (
+            <button type="button" onClick={() => navigate(`/projects/${projectId}/character`)}>
+              Manage character
+            </button>
+          )}
           {isArchived ? (
             <button type="button" disabled={busy} onClick={() => void onRestore()}>
               Restore

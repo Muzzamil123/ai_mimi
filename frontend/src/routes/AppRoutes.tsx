@@ -9,6 +9,7 @@ import { ResetPasswordPage } from '../pages/auth/ResetPasswordPage'
 import { VerifyEmailPage } from '../pages/auth/VerifyEmailPage'
 import { HealthPage } from '../pages/HealthPage'
 import { NotFoundPage } from '../pages/NotFoundPage'
+import { CharacterPage } from '../pages/characters/CharacterPage'
 import { EditProjectPage } from '../pages/projects/EditProjectPage'
 import { NewProjectPage } from '../pages/projects/NewProjectPage'
 import { ProjectDetailPage } from '../pages/projects/ProjectDetailPage'
@@ -36,6 +37,7 @@ export function AppRoutes() {
           <Route path="projects/new" element={<NewProjectPage />} />
           <Route path="projects/:id" element={<ProjectDetailPage />} />
           <Route path="projects/:id/edit" element={<EditProjectPage />} />
+          <Route path="projects/:id/character" element={<CharacterPage />} />
         </Route>
 
         {/* Admin-only routes */}
