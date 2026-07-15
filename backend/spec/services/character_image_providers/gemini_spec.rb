@@ -61,6 +61,14 @@ RSpec.describe CharacterImageProviders::Gemini do
       .to raise_error(CharacterImageProviders::TimeoutError) { |e| expect(e.retryable).to be(true) }
   end
 
+  it "raises a retryable error when the returned image data is empty" do
+    body = { candidates: [ { content: { parts: [ { inlineData: { mimeType: "image/png", data: "" } } ] } } ] }.to_json
+    stub_request(:post, endpoint).to_return(status: 200, body: body)
+
+    expect { provider.generate(prompt: "x") }
+      .to raise_error(CharacterImageProviders::Error, /empty image/)
+  end
+
   it "raises a non-retryable error when the response contains no image" do
     stub_request(:post, endpoint)
       .to_return(status: 200, body: { candidates: [ { content: { parts: [] } } ] }.to_json)

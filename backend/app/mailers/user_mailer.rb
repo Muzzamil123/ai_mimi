@@ -24,7 +24,7 @@ class UserMailer < ApplicationMailer
     @project = character.project
     @user = @project.user
     @review_url = frontend_url("/projects/#{@project.id}/character")
-    mail(to: @user.email, subject: "Your character for “#{@project.name}” is ready for approval")
+    mail(to: @user.email, subject: %(Your character for "#{@project.name}" is ready for approval))
   end
 
   private

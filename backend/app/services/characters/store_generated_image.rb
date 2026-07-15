@@ -23,7 +23,11 @@ module Characters
       dimensions = Media::ImageInfo.dimensions(data)
 
       image = nil
-      @character.transaction do
+      @character.with_lock do
+        # Idempotent under concurrent delivery: if a sibling job already
+        # finalized this generation, don't create a duplicate image.
+        break image = @character.latest_image unless @character.generating?
+
         image = @character.images.create!(
           storage_key: @storage_key,
           original_filename: "character-#{@character.id}.#{Characters.extension_for(@mime_type)}",

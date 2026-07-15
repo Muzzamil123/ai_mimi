@@ -119,6 +119,8 @@ module CharacterPromptProviders
 
     def timeout
       Integer(ENV.fetch("OPENAI_TIMEOUT_SECONDS", DEFAULT_TIMEOUT))
+    rescue ArgumentError, TypeError
+      DEFAULT_TIMEOUT
     end
   end
 end

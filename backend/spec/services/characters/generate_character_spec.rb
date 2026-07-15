@@ -40,4 +40,11 @@ RSpec.describe Characters::GenerateCharacter do
     expect { described_class.call(character) }
       .to raise_error(Characters::InvalidState, /in progress/)
   end
+
+  it "gives a clear message when the character is awaiting approval" do
+    character = create(:character, :awaiting_approval, project: project)
+
+    expect { described_class.call(character) }
+      .to raise_error(Characters::InvalidState, /awaiting approval/)
+  end
 end

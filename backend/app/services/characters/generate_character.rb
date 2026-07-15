@@ -20,7 +20,13 @@ module Characters
       end
 
       unless STARTABLE_STATUSES.include?(@character.status)
-        raise Characters::InvalidState, "Generation is already in progress"
+        message =
+          if @character.awaiting_approval?
+            "This character is awaiting approval — approve or reject it first"
+          else
+            "Generation is already in progress"
+          end
+        raise Characters::InvalidState, message
       end
 
       generation_id = SecureRandom.uuid

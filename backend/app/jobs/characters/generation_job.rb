@@ -36,6 +36,17 @@ module Characters
       handle_failure(character, generation_id, e.message, retryable: e.retryable)
     rescue Storage::Error => e
       handle_failure(character, generation_id, e.message, retryable: false)
+    rescue StandardError => e
+      # Catch-all so an unexpected error (validation, DB, parse, bad config) can
+      # never strand the character in `generating` with no recovery path. Mark
+      # the generation failed (the user can then regenerate) and log for ops.
+      Rails.logger.error(
+        message: "character_generation_error",
+        character_id: character&.id,
+        error: e.class.name,
+        detail: e.message
+      )
+      handle_failure(character, generation_id, e.message, retryable: false)
     end
 
     def handle_failure(character, generation_id, message, retryable:)

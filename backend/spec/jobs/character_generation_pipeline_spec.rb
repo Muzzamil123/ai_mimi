@@ -81,6 +81,16 @@ RSpec.describe "Character generation pipeline jobs", type: :job do
       expect(character.reload).to be_failed
       expect(project.reload).to be_failed
     end
+
+    it "marks the generation failed on an unexpected (non-provider) error, never stranding it" do
+      allow(Characters::GeneratePrompt).to receive(:call)
+        .and_raise(ActiveRecord::RecordInvalid.new(Character.new))
+
+      GenerateCharacterPromptJob.new.perform(character.id, character.generation_id)
+
+      expect(character.reload).to be_failed
+      expect(project.reload).to be_failed
+    end
   end
 
   describe SendCharacterApprovalEmailJob do

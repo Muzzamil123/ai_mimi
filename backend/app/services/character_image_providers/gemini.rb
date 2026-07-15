@@ -38,8 +38,11 @@ module CharacterImageProviders
       part = image_part(payload)
       raise Error.new("Gemini returned no image", retryable: true) if part.nil?
 
+      image_data = Base64.decode64(part.dig("inlineData", "data").to_s)
+      raise Error.new("Gemini returned empty image data", retryable: true) if image_data.empty?
+
       Result.new(
-        image_data: Base64.decode64(part.dig("inlineData", "data").to_s),
+        image_data: image_data,
         mime_type: part.dig("inlineData", "mimeType") || "image/png",
         provider: "gemini",
         model: payload["modelVersion"] || model,
@@ -113,6 +116,8 @@ module CharacterImageProviders
 
     def timeout
       Integer(ENV.fetch("GEMINI_TIMEOUT_SECONDS", DEFAULT_TIMEOUT))
+    rescue ArgumentError, TypeError
+      DEFAULT_TIMEOUT
     end
 
     def cost_per_image
