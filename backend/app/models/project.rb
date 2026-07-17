@@ -8,6 +8,7 @@ class Project < ApplicationRecord
            -> { order(created_at: :asc) },
            class_name: "ProjectStatusChange",
            dependent: :destroy
+  has_many :approval_requests, dependent: :destroy
 
   SUPPORTED_LANGUAGES = %w[english urdu roman_urdu punjabi].freeze
   SUPPORTED_PLATFORMS = %w[instagram_reels tiktok youtube_shorts other].freeze

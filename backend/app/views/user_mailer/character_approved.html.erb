@@ -1,0 +1,10 @@
+<h1>Character approved 🎉</h1>
+
+<p>
+  Thanks <%= @user.name %> — the character <strong><%= @character.name %></strong>
+  for your project <strong><%= @project.name %></strong> has been approved and is
+  now locked as the project's reference character.
+</p>
+
+<p>Your project is ready. You can open it here:</p>
+<p><a href="<%= @project_url %>"><%= @project_url %></a></p>

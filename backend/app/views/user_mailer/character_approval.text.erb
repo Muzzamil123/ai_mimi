@@ -1,9 +1,17 @@
 Your character is ready, <%= @user.name %>!
 
 We generated the character "<%= @character.name %>" for your project
-"<%= @project.name %>". Please review and approve it before generating videos:
+"<%= @project.name %>". Please review and approve it before generating videos.
 
+Approve this character:
+<%= @approve_url %>
+
+Reject and give feedback:
+<%= @reject_url %>
+
+Or open the review page:
 <%= @review_url %>
 
-If the character isn't quite right, you can reject it with feedback and
-regenerate a new one — no video can be generated until a character is approved.
+This secure link can be used once and expires
+<%= @expires_at.strftime("%B %-d, %Y at %H:%M UTC") %>. No video can be
+generated until a character is approved.

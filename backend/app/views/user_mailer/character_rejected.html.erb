@@ -1,0 +1,17 @@
+<h1>Character rejected</h1>
+
+<p>
+  Hi <%= @user.name %> — the character <strong><%= @character.name %></strong>
+  for your project <strong><%= @project.name %></strong> was rejected.
+</p>
+
+<% if @feedback.present? %>
+  <p>Your feedback:</p>
+  <blockquote><%= @feedback %></blockquote>
+<% end %>
+
+<p>
+  You can regenerate a new character for the same project — no video can be
+  generated until a character is approved. Open the project here:
+</p>
+<p><a href="<%= @project_url %>"><%= @project_url %></a></p>
