@@ -12,6 +12,7 @@ gem "bootsnap", require: false
 gem "rack-cors", "~> 2.0"    # Cross-Origin Resource Sharing for the React clients
 gem "blueprinter", "~> 1.1"  # JSON serialization layer (keeps rendering out of controllers)
 gem "oj", "~> 3.16"          # Fast JSON encoding used by Blueprinter
+gem "rubyzip", "~> 2.3"      # Build download-all archives (Phase 9)
 
 # --- Background processing ---
 gem "sidekiq", "~> 7.2"      # Background jobs

@@ -159,11 +159,18 @@ export function GenerationWorkspacePage() {
     <section className="generation-workspace">
       <div className="page-header">
         <h1>Generate videos — {video.title}</h1>
-        {isActive(video, generations) && (
-          <button type="button" className="danger" disabled={busy} onClick={onCancel}>
-            Cancel
-          </button>
-        )}
+        <div className="video-header-actions">
+          {generations.some((g) => g.status === 'completed') && (
+            <Link className="button-link" to={`/projects/${projectId}/videos/${vId}/outputs`}>
+              View outputs →
+            </Link>
+          )}
+          {isActive(video, generations) && (
+            <button type="button" className="danger" disabled={busy} onClick={onCancel}>
+              Cancel
+            </button>
+          )}
+        </div>
       </div>
 
       {canStart && (

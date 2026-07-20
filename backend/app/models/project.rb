@@ -14,6 +14,8 @@ class Project < ApplicationRecord
   # Video-generation outputs across the project's videos (Phase 8). Deletion is
   # handled by the videos cascade / DB foreign keys.
   has_many :video_generations, dependent: :destroy
+  # Stored output files across the project (Phase 9), for the project-wide archive.
+  has_many :video_assets, through: :video_generations
 
   SUPPORTED_LANGUAGES = %w[english urdu roman_urdu punjabi].freeze
   SUPPORTED_PLATFORMS = %w[instagram_reels tiktok youtube_shorts other].freeze

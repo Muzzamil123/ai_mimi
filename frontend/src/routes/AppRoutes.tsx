@@ -20,6 +20,7 @@ import { VideoDetailPage } from '../pages/videos/VideoDetailPage'
 import { VideosListPage } from '../pages/videos/VideosListPage'
 import { PromptWorkspacePage } from '../pages/prompts/PromptWorkspacePage'
 import { GenerationWorkspacePage } from '../pages/generations/GenerationWorkspacePage'
+import { VideoOutputsPage } from '../pages/outputs/VideoOutputsPage'
 import { AdminRoute } from './AdminRoute'
 import { ProtectedRoute } from './ProtectedRoute'
 
@@ -55,6 +56,7 @@ export function AppRoutes() {
             path="projects/:id/videos/:videoId/generation"
             element={<GenerationWorkspacePage />}
           />
+          <Route path="projects/:id/videos/:videoId/outputs" element={<VideoOutputsPage />} />
         </Route>
 
         {/* Admin-only routes */}

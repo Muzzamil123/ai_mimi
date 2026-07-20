@@ -7,6 +7,8 @@ class VideoGeneration < ApplicationRecord
   belongs_to :project
   belongs_to :character
   belongs_to :prompt
+  # The downloaded/validated/stored file for this output (Phase 9).
+  has_one :video_asset, dependent: :destroy
 
   enum :status, {
     pending: 0,

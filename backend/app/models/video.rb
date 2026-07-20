@@ -10,6 +10,8 @@ class Video < ApplicationRecord
   belongs_to :active_prompt, class_name: "Prompt", optional: true
   # Video-generation outputs (Phase 8): four per generation request.
   has_many :video_generations, dependent: :destroy
+  # Downloaded/stored output files (Phase 9), one per completed generation.
+  has_many :video_assets, through: :video_generations
 
   # Phase 1 supports 15-second videos only. Longer durations (1–5 minutes) are a
   # future capability; the architecture supports them behind a flag so enabling

@@ -37,9 +37,11 @@ RUN bundle exec bootsnap precompile app/ lib/
 # Final stage for app image
 FROM base
 
-# Install packages needed for deployment
+# Install packages needed for deployment. ffmpeg provides ffprobe/ffmpeg used by
+# the production media inspector + thumbnailer (Phase 9); off-prod the fake
+# backends run without it.
 RUN apt-get update -qq && \
-    apt-get install --no-install-recommends -y curl libvips postgresql-client && \
+    apt-get install --no-install-recommends -y curl libvips postgresql-client ffmpeg && \
     rm -rf /var/lib/apt/lists /var/cache/apt/archives
 
 # Copy built artifacts: gems, application

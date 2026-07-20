@@ -12,17 +12,22 @@ module VideoGenerations
 
     def call
       terminal = false
+      completed = false
 
       # Row-lock the status flip so a concurrent poll and webhook for the same
       # variant can't lost-update each other (the in-memory status is re-read
-      # under the lock). Finalize runs AFTER the row lock is released so we never
-      # hold a generation-row lock while taking the video lock — that would invert
-      # the video→generation ordering used by cancel and risk a deadlock.
+      # under the lock). Finalize + the download enqueue run AFTER the lock is
+      # released: finalize avoids inverting the video→generation lock ordering,
+      # and the enqueue must happen post-commit — Rails 7.1 + Sidekiq push to
+      # Redis immediately, so enqueuing inside the transaction would let a worker
+      # dequeue and read the still-uncommitted `processing` row and no-op,
+      # silently dropping the output.
       @generation.with_lock do
         next unless @generation.processing?
 
         if @status.completed?
           @generation.transition_to!(:completed)
+          completed = true
           terminal = true
         elsif @status.failed?
           @generation.transition_to!(:failed,
@@ -35,6 +40,11 @@ module VideoGenerations
       end
 
       finalize if terminal
+      # Phase 9: pull, validate, and permanently store the finished output. Only
+      # the call that actually flipped the variant to completed enqueues, so this
+      # fires exactly once, after commit.
+      DownloadGeneratedVideoJob.perform_later(@generation.id) if completed
+
       @generation
     end
 
