@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_07_17_100001) do
+ActiveRecord::Schema[7.1].define(version: 2026_07_20_000002) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "citext"
   enable_extension "plpgsql"
@@ -132,6 +132,43 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_17_100001) do
     t.index ["email"], name: "index_users_on_email", unique: true
   end
 
+  create_table "video_status_changes", force: :cascade do |t|
+    t.bigint "video_id", null: false
+    t.bigint "actor_id"
+    t.string "from_status"
+    t.string "to_status", null: false
+    t.string "reason"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["actor_id"], name: "index_video_status_changes_on_actor_id"
+    t.index ["video_id", "created_at"], name: "index_video_status_changes_on_video_id_and_created_at"
+    t.index ["video_id"], name: "index_video_status_changes_on_video_id"
+  end
+
+  create_table "videos", force: :cascade do |t|
+    t.bigint "project_id", null: false
+    t.string "title", null: false
+    t.text "idea_text"
+    t.string "idea_audio_storage_key"
+    t.text "transcript"
+    t.string "language", null: false
+    t.string "tone"
+    t.integer "duration_seconds", default: 15, null: false
+    t.integer "status", default: 0, null: false
+    t.string "transcription_id"
+    t.string "transcription_provider"
+    t.string "transcription_provider_model"
+    t.string "transcription_provider_request_id"
+    t.decimal "transcription_cost", precision: 12, scale: 6
+    t.string "transcription_failure_reason"
+    t.bigint "active_prompt_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["project_id", "status"], name: "index_videos_on_project_id_and_status"
+    t.index ["project_id"], name: "index_videos_on_project_id"
+    t.index ["transcription_id"], name: "index_videos_on_transcription_id"
+  end
+
   add_foreign_key "approval_requests", "characters", on_delete: :cascade
   add_foreign_key "approval_requests", "projects", on_delete: :cascade
   add_foreign_key "approval_requests", "users", on_delete: :cascade
@@ -142,4 +179,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_17_100001) do
   add_foreign_key "projects", "characters", column: "active_character_id", on_delete: :nullify
   add_foreign_key "projects", "users"
   add_foreign_key "refresh_tokens", "users", on_delete: :cascade
+  add_foreign_key "video_status_changes", "users", column: "actor_id", on_delete: :nullify
+  add_foreign_key "video_status_changes", "videos", on_delete: :cascade
+  add_foreign_key "videos", "projects", on_delete: :cascade
 end

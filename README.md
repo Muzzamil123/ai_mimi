@@ -8,7 +8,7 @@ prompt and four Google Labs renders (two 3:4, two 9:16, 15 seconds).
 This repository is being built **phase by phase** per
 [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md).
 
-> **Current status: Phase 5 — Email Approval Workflow** (Phases 1–4 complete).
+> **Current status: Phase 6 — Video Workspace, Typed Ideas & Speech Input** (Phases 1–5 complete).
 > Delivered so far: health/tooling/Docker/CI foundation; JWT auth (access +
 > rotating refresh tokens), registration, login/logout, password reset, email
 > verification, `/me`, RBAC (user/admin), auth rate limiting; **project
@@ -231,6 +231,42 @@ Emails sent: **character ready for approval**, **approved**, **rejected**,
 
 ---
 
+## Video workspace (Phase 6)
+
+Once a project is `ready` (its character approved), it can own **many videos**.
+Each video keeps its **own idea and transcript**; the idea can be **typed or
+spoken**. Video creation is refused before the character is approved — enforcing
+the platform's core rule at the service layer (`Videos::CreateVideo`).
+
+A spoken idea is uploaded as audio (browser `MediaRecorder`, with a file-upload
+fallback), stored via the storage abstraction, then transcribed **asynchronously**.
+Transcription runs behind the `SpeechToTextProviders` adapter interface — OpenAI
+in production (`whisper-1`, direct multipart HTTP, no SDK), a deterministic
+`fake` off-prod so the suite needs no credentials. The pipeline is idempotent: a
+rotating `transcription_id` supersedes stale jobs (mirrors character generation),
+transient provider errors retry with backoff, and permanent/unexpected errors
+mark the video `failed` (never stranded in `transcribing`). The resulting
+transcript is **editable** in the portal.
+
+**Phase 1 enforces 15-second videos only.** The duration rule is
+architecture-safe for the future 1–5 minute range: flip `VIDEO_LONG_FORM_ENABLED`
+and 60–300s becomes valid, no schema/model rewrite. `active_prompt_id` is staged
+on the table (no FK yet) for Phase 7, exactly as `active_character_id` was staged
+in Phase 3.
+
+Supported idea languages: **English, Urdu, Roman Urdu, Punjabi**.
+
+| Method | Path | Auth | Purpose |
+|---|---|---|---|
+| GET | `/api/v1/projects/:id/videos` | owner/admin | List videos (search `q`, pagination) |
+| POST | `/api/v1/projects/:id/videos` | owner/admin | Create a video (project must be `ready`) |
+| GET | `/api/v1/projects/:id/videos/:vid` | owner/admin | Show a video + status history |
+| PATCH | `/api/v1/projects/:id/videos/:vid` | owner/admin | Edit idea / transcript / metadata |
+| DELETE | `/api/v1/projects/:id/videos/:vid` | owner/admin | Delete (drafts only) |
+| POST | `/api/v1/projects/:id/videos/:vid/audio` | owner/admin | Upload a spoken idea → transcribe (202) |
+
+---
+
 ## Running tests
 
 **Everything, in containers:**
@@ -281,7 +317,11 @@ the full list. Key variables:
 | `CHARACTER_PROMPT_PROVIDER` | Prompt provider (`openai`/`local`) | `local` (dev/test), `openai` (prod) |
 | `GEMINI_API_KEY`    | Google Gemini API key (image generation) | — (required in production)       |
 | `GEMINI_IMAGE_MODEL`| Gemini image model                       | `gemini-2.5-flash-image`         |
-| `OPENAI_API_KEY`    | OpenAI API key (prompt generation)       | — (required in production)       |
+| `OPENAI_API_KEY`    | OpenAI API key (prompts + transcription) | — (required in production)       |
+| `SPEECH_TO_TEXT_PROVIDER` | Transcription provider (`openai`/`fake`) | `fake` (dev/test), `openai` (prod) |
+| `OPENAI_TRANSCRIBE_MODEL` | OpenAI transcription model         | `whisper-1`                      |
+| `VIDEO_AUDIO_MAX_BYTES` | Max idea-audio upload size (bytes)   | `26214400` (25 MB)               |
+| `VIDEO_LONG_FORM_ENABLED` | Allow 60–300s durations (else 15s only) | `false`                       |
 | `SIDEKIQ_CONCURRENCY` | Sidekiq worker threads                 | `5`                              |
 
 ---
@@ -299,8 +339,8 @@ the full list. Key variables:
 
 ## Roadmap
 
-Subsequent phases (see `docs/IMPLEMENTATION_PLAN.md`): authentication & roles →
-project lifecycle → Gemini character generation → email approval → video
-workspace & transcription → OpenAI prompts → Google Labs video generation →
-asset storage → notifications → admin portal → cost tracking → security
-hardening → production deployment. Phase 2 adds Flutter mobile apps.
+Completed: authentication & roles → project lifecycle → Gemini character
+generation → email approval → **video workspace & transcription (Phase 6)**.
+Next (see `docs/IMPLEMENTATION_PLAN.md`): OpenAI prompt generation → Google Labs
+video generation → asset storage → notifications → admin portal → cost tracking →
+security hardening → production deployment. Phase 2 adds Flutter mobile apps.

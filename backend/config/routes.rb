@@ -40,6 +40,13 @@ Rails.application.routes.draw do
           post :reset
           get :image
         end
+
+        # A ready project owns many videos (plural nested resource, Phase 6).
+        resources :videos, only: %i[index show create update destroy] do
+          member do
+            post :audio, to: "videos#upload_audio"
+          end
+        end
       end
 
       # --- Public character approval (token-protected, no auth) ---
