@@ -147,11 +147,18 @@ export function VideoDetailPage() {
           <h1>{video.title}</h1>
           <VideoStatusBadge status={video.status} />
         </div>
-        {video.status === 'draft' && (
-          <button type="button" className="danger" disabled={busy} onClick={onDelete}>
-            Delete
-          </button>
-        )}
+        <div className="video-header-actions">
+          {video.idea_present && (
+            <Link className="button-link" to={`/projects/${projectId}/videos/${vId}/prompt`}>
+              Prompt
+            </Link>
+          )}
+          {video.status === 'draft' && (
+            <button type="button" className="danger" disabled={busy} onClick={onDelete}>
+              Delete
+            </button>
+          )}
+        </div>
       </div>
 
       <dl className="profile-summary">

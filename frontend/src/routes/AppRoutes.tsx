@@ -18,6 +18,7 @@ import { ProjectsListPage } from '../pages/projects/ProjectsListPage'
 import { NewVideoPage } from '../pages/videos/NewVideoPage'
 import { VideoDetailPage } from '../pages/videos/VideoDetailPage'
 import { VideosListPage } from '../pages/videos/VideosListPage'
+import { PromptWorkspacePage } from '../pages/prompts/PromptWorkspacePage'
 import { AdminRoute } from './AdminRoute'
 import { ProtectedRoute } from './ProtectedRoute'
 
@@ -48,6 +49,7 @@ export function AppRoutes() {
           <Route path="projects/:id/videos" element={<VideosListPage />} />
           <Route path="projects/:id/videos/new" element={<NewVideoPage />} />
           <Route path="projects/:id/videos/:videoId" element={<VideoDetailPage />} />
+          <Route path="projects/:id/videos/:videoId/prompt" element={<PromptWorkspacePage />} />
         </Route>
 
         {/* Admin-only routes */}

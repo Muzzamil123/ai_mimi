@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_07_20_000002) do
+ActiveRecord::Schema[7.1].define(version: 2026_07_21_000001) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "citext"
   enable_extension "plpgsql"
@@ -106,6 +106,30 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_20_000002) do
     t.index ["user_id"], name: "index_projects_on_user_id"
   end
 
+  create_table "prompts", force: :cascade do |t|
+    t.bigint "video_id", null: false
+    t.integer "version", null: false
+    t.text "content"
+    t.text "source_idea"
+    t.string "provider"
+    t.string "provider_model"
+    t.string "provider_request_id"
+    t.integer "input_tokens"
+    t.integer "output_tokens"
+    t.decimal "estimated_cost", precision: 12, scale: 6
+    t.integer "status", default: 0, null: false
+    t.string "created_by_type"
+    t.bigint "created_by_id"
+    t.string "generation_id"
+    t.string "failure_reason"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["created_by_type", "created_by_id"], name: "index_prompts_on_created_by_type_and_created_by_id"
+    t.index ["video_id", "status"], name: "index_prompts_on_video_id_and_status"
+    t.index ["video_id", "version"], name: "index_prompts_on_video_id_and_version", unique: true
+    t.index ["video_id"], name: "index_prompts_on_video_id"
+  end
+
   create_table "refresh_tokens", force: :cascade do |t|
     t.bigint "user_id", null: false
     t.string "token_digest", null: false
@@ -164,6 +188,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_20_000002) do
     t.bigint "active_prompt_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.index ["active_prompt_id"], name: "index_videos_on_active_prompt_id"
     t.index ["project_id", "status"], name: "index_videos_on_project_id_and_status"
     t.index ["project_id"], name: "index_videos_on_project_id"
     t.index ["transcription_id"], name: "index_videos_on_transcription_id"
@@ -178,8 +203,10 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_20_000002) do
   add_foreign_key "project_status_changes", "users", column: "actor_id", on_delete: :nullify
   add_foreign_key "projects", "characters", column: "active_character_id", on_delete: :nullify
   add_foreign_key "projects", "users"
+  add_foreign_key "prompts", "videos", on_delete: :cascade
   add_foreign_key "refresh_tokens", "users", on_delete: :cascade
   add_foreign_key "video_status_changes", "users", column: "actor_id", on_delete: :nullify
   add_foreign_key "video_status_changes", "videos", on_delete: :cascade
   add_foreign_key "videos", "projects", on_delete: :cascade
+  add_foreign_key "videos", "prompts", column: "active_prompt_id", on_delete: :nullify
 end
