@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_07_21_000002) do
+ActiveRecord::Schema[7.1].define(version: 2026_07_21_000003) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "citext"
   enable_extension "plpgsql"
@@ -156,6 +156,27 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_21_000002) do
     t.index ["email"], name: "index_users_on_email", unique: true
   end
 
+  create_table "video_assets", force: :cascade do |t|
+    t.bigint "video_generation_id", null: false
+    t.string "storage_key"
+    t.string "filename"
+    t.string "mime_type"
+    t.integer "width"
+    t.integer "height"
+    t.integer "duration_seconds"
+    t.bigint "file_size"
+    t.string "checksum"
+    t.string "thumbnail_storage_key"
+    t.integer "validation_status", default: 0, null: false
+    t.datetime "stored_at"
+    t.bigint "duplicate_of_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["checksum"], name: "index_video_assets_on_checksum"
+    t.index ["duplicate_of_id"], name: "index_video_assets_on_duplicate_of_id"
+    t.index ["video_generation_id"], name: "index_video_assets_on_video_generation_id", unique: true
+  end
+
   create_table "video_generations", force: :cascade do |t|
     t.bigint "video_id", null: false
     t.bigint "project_id", null: false
@@ -237,6 +258,8 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_21_000002) do
   add_foreign_key "projects", "users"
   add_foreign_key "prompts", "videos", on_delete: :cascade
   add_foreign_key "refresh_tokens", "users", on_delete: :cascade
+  add_foreign_key "video_assets", "video_assets", column: "duplicate_of_id", on_delete: :nullify
+  add_foreign_key "video_assets", "video_generations", on_delete: :cascade
   add_foreign_key "video_generations", "characters", on_delete: :cascade
   add_foreign_key "video_generations", "projects", on_delete: :cascade
   add_foreign_key "video_generations", "prompts", on_delete: :cascade

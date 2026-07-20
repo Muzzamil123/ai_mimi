@@ -626,3 +626,37 @@ button.danger:hover {
   background: var(--accent, #4f46e5);
   transition: width 0.3s ease;
 }
+
+/* --- Video outputs (Phase 9) --- */
+.outputs-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+.output-card {
+  border: 1px solid var(--border, #ccc);
+  border-radius: 8px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.output-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.output-card__label {
+  font-weight: 600;
+}
+.output-card__player {
+  width: 100%;
+  border-radius: 6px;
+  background: #000;
+  aspect-ratio: 3 / 4;
+}
+.output-card__meta dt {
+  font-size: 0.8rem;
+  color: var(--muted, #666);
+}

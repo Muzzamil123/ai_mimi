@@ -30,6 +30,10 @@ Rails.application.routes.draw do
         member do
           post :archive
           post :restore
+          # Async project-wide "download all" archive (Phase 9): POST to build,
+          # GET to poll for the signed download URL.
+          post :download_archive, to: "project_archives#create"
+          get :download_archive, to: "project_archives#show"
         end
 
         # A project owns exactly one character (singular nested resource).
@@ -66,8 +70,18 @@ Rails.application.routes.draw do
               post :retry
             end
           end
+
+          # A video's downloaded output files (Phase 9).
+          resources :assets, only: %i[index], controller: "video_assets" do
+            collection do
+              get :archive
+            end
+          end
         end
       end
+
+      # --- Public, token-gated asset/thumbnail/archive downloads (no auth) ---
+      get "downloads", to: "downloads#show"
 
       # --- Provider webhooks (public, signature-verified, no auth) ---
       namespace :webhooks do

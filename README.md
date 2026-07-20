@@ -8,7 +8,7 @@ prompt and four Google Labs renders (two 3:4, two 9:16, 15 seconds).
 This repository is being built **phase by phase** per
 [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md).
 
-> **Current status: Phase 8 — Google Labs Video Generation** (Phases 1–7 complete).
+> **Current status: Phase 9 — Asset Download, Validation, Storage & Delivery** (Phases 1–8 complete).
 > Delivered so far: health/tooling/Docker/CI foundation; JWT auth (access +
 > rotating refresh tokens), registration, login/logout, password reset, email
 > verification, `/me`, RBAC (user/admin), auth rate limiting; **project
@@ -343,6 +343,37 @@ validating, and storing the finished videos is Phase 9.
 
 ---
 
+## Asset download, validation & delivery (Phase 9)
+
+When a generation output completes, an idempotent pipeline pulls it from the
+provider and makes it a permanently-stored, playable, downloadable `VideoAsset`:
+**download** (provider `fetch_asset` + checksum + **duplicate detection/dedup**) →
+**validate** (file-type, playable, duration, aspect-ratio vs the requested 3:4 /
+9:16) → **thumbnail** → **store** (permanent upload). Media probing and
+thumbnailing sit behind abstractions — `ffprobe`/`ffmpeg` in production, a
+deterministic `fake` off-prod so the suite needs no ffmpeg. Validation *failures*
+(wrong duration/aspect/not playable) mark the asset `invalid`; provider/storage
+errors retry then mark it `failed` (surfaced in the UI) — never stranded.
+
+Delivery uses **short-lived signed URLs** (`Rails.application.message_verifier`,
+built-in expiry) served by a public, token-gated endpoint — so playback and
+downloads work without a session and storage keys are never exposed. Users can
+download **individual outputs** or **all outputs** (a synchronous per-video ZIP);
+a project-wide archive builds asynchronously. Re-fetching the asset list mints
+fresh signed URLs (the "signed URL refresh").
+
+> **Production note:** real media probing/thumbnails require `ffmpeg` in the
+> image. Off-prod the `fake` backends run the full pipeline with no dependency.
+
+| Method | Path | Auth | Purpose |
+|---|---|---|---|
+| GET | `/api/v1/projects/:id/videos/:vid/assets` | owner/admin | List outputs (freshly-signed URLs) |
+| GET | `/api/v1/projects/:id/videos/:vid/assets/archive` | owner/admin | Download all outputs (ZIP) |
+| POST | `/api/v1/projects/:id/download_archive` | owner/admin | Build a project-wide archive (async) |
+| GET | `/api/v1/downloads?token=…` | public (signed) | Stream/download an asset, thumbnail, or archive |
+
+---
+
 ## Running tests
 
 **Everything, in containers:**
@@ -400,6 +431,9 @@ the full list. Key variables:
 | `GOOGLE_LABS_API_BASE_URL` | Google Labs gateway base URL | — (required for `google_labs`) |
 | `GOOGLE_LABS_API_KEY` | Google Labs gateway bearer token | — (required for `google_labs`) |
 | `GOOGLE_LABS_WEBHOOK_SECRET` | HMAC secret for status webhooks | — |
+| `VIDEO_INSPECTOR` | Media prober (`ffprobe`/`fake`) | `fake` (dev/test), `ffprobe` (prod) |
+| `VIDEO_THUMBNAILER` | Thumbnailer (`ffmpeg`/`fake`) | `fake` (dev/test), `ffmpeg` (prod) |
+| `DOWNLOAD_URL_TTL_SECONDS` | Signed download-URL lifetime | `3600` |
 | `OPENAI_TRANSCRIBE_MODEL` | OpenAI transcription model         | `whisper-1`                      |
 | `VIDEO_AUDIO_MAX_BYTES` | Max idea-audio upload size (bytes)   | `26214400` (25 MB)               |
 | `VIDEO_LONG_FORM_ENABLED` | Allow 60–300s durations (else 15s only) | `false`                       |
@@ -422,7 +456,8 @@ the full list. Key variables:
 
 Completed: authentication & roles → project lifecycle → Gemini character
 generation → email approval → video workspace & transcription → OpenAI prompt
-generation & versioning → **Google Labs video generation (Phase 8)**. Next (see
-`docs/IMPLEMENTATION_PLAN.md`): asset download/storage/delivery → notifications →
-admin portal → cost tracking → security hardening → production deployment. Phase 2
-adds Flutter mobile apps.
+generation & versioning → Google Labs video generation → **asset download,
+validation, storage & delivery (Phase 9)**. Next (see
+`docs/IMPLEMENTATION_PLAN.md`): notifications & completion emails → admin portal →
+cost tracking → security hardening → production deployment. Phase 2 adds Flutter
+mobile apps.

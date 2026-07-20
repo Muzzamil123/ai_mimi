@@ -1,3 +1,5 @@
+require "securerandom"
+
 FactoryBot.define do
   factory :video_generation do
     video { association(:video, :with_idea) }
@@ -13,16 +15,22 @@ FactoryBot.define do
     # A stable-but-unique placeholder; the real batch computes a deterministic key.
     sequence(:idempotency_key) { |n| "test-key-#{n}" }
 
+    # A parseable fake provider job id so the Fake provider's fetch_asset can
+    # return a fake video whose dimensions match this variant's aspect ratio.
+    transient do
+      fake_job_id { "fake-job-#{aspect_ratio.tr(':', 'x')}-#{variation_number}-#{SecureRandom.hex(4)}" }
+    end
+
     trait :processing do
       status { :processing }
-      provider_job_id { "fake-job-1" }
+      provider_job_id { fake_job_id }
       progress { 40 }
       started_at { Time.current }
     end
 
     trait :completed do
       status { :completed }
-      provider_job_id { "fake-job-1" }
+      provider_job_id { fake_job_id }
       progress { 100 }
       started_at { Time.current }
       completed_at { Time.current }

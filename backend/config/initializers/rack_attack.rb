@@ -38,6 +38,12 @@ class Rack::Attack
     req.ip if req.post? && req.path == "/api/v1/webhooks/video_generations"
   end
 
+  # Public, token-gated asset/thumbnail/archive downloads. Throttle by IP to blunt
+  # token brute force (tokens are signed + expiring, but defence in depth).
+  throttle("downloads/ip", limit: 120, period: 60) do |req|
+    req.ip if req.get? && req.path == "/api/v1/downloads"
+  end
+
   # Consistent JSON error envelope for throttled requests.
   self.throttled_responder = lambda do |_request|
     body = { error: { code: "rate_limited", messages: ["Too many requests. Please slow down and try again later."] } }

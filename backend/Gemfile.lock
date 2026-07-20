@@ -324,6 +324,7 @@ GEM
       rubocop-performance (>= 1.24)
       rubocop-rails (>= 2.30)
     ruby-progressbar (1.13.0)
+    rubyzip (2.4.1)
     securerandom (0.4.1)
     sidekiq (7.3.9)
       base64
@@ -382,6 +383,7 @@ DEPENDENCIES
   rspec-rails (~> 6.1)
   rspec_junit_formatter (~> 0.6)
   rubocop-rails-omakase
+  rubyzip (~> 2.3)
   sidekiq (~> 7.2)
   tzinfo-data
   webmock (~> 3.23)
