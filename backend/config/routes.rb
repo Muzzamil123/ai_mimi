@@ -46,6 +46,16 @@ Rails.application.routes.draw do
           member do
             post :audio, to: "videos#upload_audio"
           end
+
+          # A video owns many prompt versions (Phase 7).
+          resources :prompts, only: %i[index show create] do
+            collection do
+              post :generate
+            end
+            member do
+              post :approve
+            end
+          end
         end
       end
 

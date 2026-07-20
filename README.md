@@ -8,7 +8,7 @@ prompt and four Google Labs renders (two 3:4, two 9:16, 15 seconds).
 This repository is being built **phase by phase** per
 [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md).
 
-> **Current status: Phase 6 — Video Workspace, Typed Ideas & Speech Input** (Phases 1–5 complete).
+> **Current status: Phase 7 — OpenAI Prompt Generation & Prompt Versioning** (Phases 1–6 complete).
 > Delivered so far: health/tooling/Docker/CI foundation; JWT auth (access +
 > rotating refresh tokens), registration, login/logout, password reset, email
 > verification, `/me`, RBAC (user/admin), auth rate limiting; **project
@@ -267,6 +267,44 @@ Supported idea languages: **English, Urdu, Roman Urdu, Punjabi**.
 
 ---
 
+## Prompt generation & versioning (Phase 7)
+
+Each video turns its idea into a **production-ready video prompt** via OpenAI,
+with full **version history**. Prompt generation is OpenAI's responsibility,
+behind the `TextGenerationProviders` adapter (real Chat Completions over HTTP, no
+SDK; a deterministic `local` provider is the default off-prod so the suite needs
+no credentials). The prompt is grounded by `Prompts::BuildContext`, which
+assembles the project's **approved character description**, the video idea +
+transcript, language, tone, the 15-second duration, target platforms, and the
+required directions (camera, visual, character movement, dialogue, audio style)
+plus the **character-consistency** and **"use the attached character image"**
+instructions.
+
+Generation is **async and idempotent** (rotating `generation_id`, mirrors the
+character/transcription pipelines): `Prompts::GeneratePrompt` creates a new
+version in `generating`, moves the video to `generating_prompt`, and enqueues
+`GenerateVideoPromptJob` (or `RegenerateVideoPromptJob`); the job fills content +
+records **token usage and estimated cost**, moving the version to `draft` and the
+video to `prompt_ready`. Transient provider errors retry; permanent/unexpected
+errors mark the version `failed` (never stranded).
+
+Versions are **immutable** — editing saves a *new* draft version and supersedes
+the prior working one, so history/compare always reflects what was actually
+produced. **Approving** a draft marks it `approved`, supersedes every other live
+version, and points the video's `active_prompt_id` at it — the single approved
+prompt automated video generation (Phase 8) will use. API request logs never
+include provider secrets.
+
+| Method | Path | Auth | Purpose |
+|---|---|---|---|
+| GET | `/api/v1/projects/:id/videos/:vid/prompts` | owner/admin | Version history |
+| POST | `/api/v1/projects/:id/videos/:vid/prompts/generate` | owner/admin | Generate / regenerate (async, 202) |
+| POST | `/api/v1/projects/:id/videos/:vid/prompts` | owner/admin | Save a manual edit as a new draft version |
+| GET | `/api/v1/projects/:id/videos/:vid/prompts/:pid` | owner/admin | Show one version |
+| POST | `/api/v1/projects/:id/videos/:vid/prompts/:pid/approve` | owner/admin | Approve & set active |
+
+---
+
 ## Running tests
 
 **Everything, in containers:**
@@ -318,6 +356,7 @@ the full list. Key variables:
 | `GEMINI_API_KEY`    | Google Gemini API key (image generation) | — (required in production)       |
 | `GEMINI_IMAGE_MODEL`| Gemini image model                       | `gemini-2.5-flash-image`         |
 | `OPENAI_API_KEY`    | OpenAI API key (prompts + transcription) | — (required in production)       |
+| `TEXT_GENERATION_PROVIDER` | Video-prompt provider (`openai`/`local`) | `local` (dev/test), `openai` (prod) |
 | `SPEECH_TO_TEXT_PROVIDER` | Transcription provider (`openai`/`fake`) | `fake` (dev/test), `openai` (prod) |
 | `OPENAI_TRANSCRIBE_MODEL` | OpenAI transcription model         | `whisper-1`                      |
 | `VIDEO_AUDIO_MAX_BYTES` | Max idea-audio upload size (bytes)   | `26214400` (25 MB)               |
@@ -340,7 +379,8 @@ the full list. Key variables:
 ## Roadmap
 
 Completed: authentication & roles → project lifecycle → Gemini character
-generation → email approval → **video workspace & transcription (Phase 6)**.
-Next (see `docs/IMPLEMENTATION_PLAN.md`): OpenAI prompt generation → Google Labs
-video generation → asset storage → notifications → admin portal → cost tracking →
-security hardening → production deployment. Phase 2 adds Flutter mobile apps.
+generation → email approval → video workspace & transcription → **OpenAI prompt
+generation & versioning (Phase 7)**. Next (see `docs/IMPLEMENTATION_PLAN.md`):
+Google Labs video generation → asset storage → notifications → admin portal →
+cost tracking → security hardening → production deployment. Phase 2 adds Flutter
+mobile apps.

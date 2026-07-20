@@ -4,8 +4,10 @@ class Video < ApplicationRecord
            -> { order(created_at: :asc) },
            class_name: "VideoStatusChange",
            dependent: :destroy
-  # `active_prompt` is introduced in Phase 7; the column is staged now (see the
-  # create_videos migration) but no association exists yet.
+  # A video owns many prompt versions (Phase 7); `active_prompt` points at the
+  # approved one that automated video generation (Phase 8) will use.
+  has_many :prompts, dependent: :destroy
+  belongs_to :active_prompt, class_name: "Prompt", optional: true
 
   # Phase 1 supports 15-second videos only. Longer durations (1–5 minutes) are a
   # future capability; the architecture supports them behind a flag so enabling
@@ -67,6 +69,18 @@ class Video < ApplicationRecord
 
   def audio_attached?
     idea_audio_storage_key.present?
+  end
+
+  # The latest live prompt version (the one the workspace acts on): a generation
+  # in flight, or the most recent draft/approved version. nil until first asked.
+  def current_prompt
+    prompts.live.by_version.first
+  end
+
+  # The idea text used as the source for prompt generation: the (editable)
+  # transcript when present, else the typed idea.
+  def idea_source
+    transcript.presence || idea_text
   end
 
   # Whether long-form (1–5 minute) durations are enabled. Off by default so
