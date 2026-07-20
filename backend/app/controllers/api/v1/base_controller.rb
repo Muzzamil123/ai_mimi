@@ -44,6 +44,18 @@ module Api
         render_error(:unprocessable_entity, "invalid_state", e.message)
       end
 
+      rescue_from ::Videos::InvalidTransition do |e|
+        render_error(:unprocessable_entity, "invalid_transition", e.message)
+      end
+
+      rescue_from ::Videos::InvalidState do |e|
+        render_error(:unprocessable_entity, "invalid_state", e.message)
+      end
+
+      rescue_from ::Videos::InvalidAudio do |e|
+        render_error(:unprocessable_entity, "invalid_audio", e.message)
+      end
+
       rescue_from ::Approvals::InvalidToken do |e|
         render_error(:not_found, "invalid_token", e.message)
       end

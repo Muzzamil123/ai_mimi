@@ -15,6 +15,9 @@ import { EditProjectPage } from '../pages/projects/EditProjectPage'
 import { NewProjectPage } from '../pages/projects/NewProjectPage'
 import { ProjectDetailPage } from '../pages/projects/ProjectDetailPage'
 import { ProjectsListPage } from '../pages/projects/ProjectsListPage'
+import { NewVideoPage } from '../pages/videos/NewVideoPage'
+import { VideoDetailPage } from '../pages/videos/VideoDetailPage'
+import { VideosListPage } from '../pages/videos/VideosListPage'
 import { AdminRoute } from './AdminRoute'
 import { ProtectedRoute } from './ProtectedRoute'
 
@@ -42,6 +45,9 @@ export function AppRoutes() {
           <Route path="projects/:id" element={<ProjectDetailPage />} />
           <Route path="projects/:id/edit" element={<EditProjectPage />} />
           <Route path="projects/:id/character" element={<CharacterPage />} />
+          <Route path="projects/:id/videos" element={<VideosListPage />} />
+          <Route path="projects/:id/videos/new" element={<NewVideoPage />} />
+          <Route path="projects/:id/videos/:videoId" element={<VideoDetailPage />} />
         </Route>
 
         {/* Admin-only routes */}

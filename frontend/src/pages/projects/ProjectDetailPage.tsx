@@ -136,6 +136,11 @@ export function ProjectDetailPage() {
               Manage character
             </button>
           )}
+          {project.status === 'ready' && (
+            <button type="button" onClick={() => navigate(`/projects/${projectId}/videos`)}>
+              Videos
+            </button>
+          )}
           {isArchived ? (
             <button type="button" disabled={busy} onClick={() => void onRestore()}>
               Restore

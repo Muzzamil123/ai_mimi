@@ -498,3 +498,49 @@ button.danger:hover {
   flex-wrap: wrap;
   margin-top: 1rem;
 }
+
+/* --- Video workspace (Phase 6) --- */
+.video-idea,
+.video-audio,
+.video-transcript,
+.video-failed {
+  margin-top: 1.5rem;
+}
+.video-idea textarea,
+.video-transcript textarea {
+  width: 100%;
+  margin-bottom: 0.5rem;
+}
+.audio-recorder {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  align-items: flex-start;
+}
+.audio-recorder__recording {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.audio-recorder__review {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.audio-recorder__upload {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.recording-dot {
+  display: inline-block;
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 50%;
+  background: var(--error);
+  animation: recording-pulse 1s ease-in-out infinite;
+}
+@keyframes recording-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
