@@ -8,7 +8,7 @@ prompt and four Google Labs renders (two 3:4, two 9:16, 15 seconds).
 This repository is being built **phase by phase** per
 [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md).
 
-> **Current status: Phase 7 — OpenAI Prompt Generation & Prompt Versioning** (Phases 1–6 complete).
+> **Current status: Phase 8 — Google Labs Video Generation** (Phases 1–7 complete).
 > Delivered so far: health/tooling/Docker/CI foundation; JWT auth (access +
 > rotating refresh tokens), registration, login/logout, password reset, email
 > verification, `/me`, RBAC (user/admin), auth rate limiting; **project
@@ -305,6 +305,44 @@ include provider secrets.
 
 ---
 
+## Video generation (Phase 8)
+
+From an **approved prompt**, a video generates **four 15-second outputs** — two
+3:4 and two 9:16 — each using the project's **approved character image**. Video
+generation is Google Labs' responsibility, behind the `VideoGenerationProviders`
+adapter (`create_generation` / `fetch_status` / `fetch_asset`). Google Labs has
+no official public API, so the `google_labs` adapter targets a configurable,
+**isolated, replaceable** gateway / browser-automation service (dedicated
+credentials, no secret leakage) — see
+[`docs/operations/google-labs-automation.md`](docs/operations/google-labs-automation.md).
+Off-prod a deterministic `fake` provider runs the whole pipeline with no
+credentials.
+
+Starting a batch validates the mandatory inputs (approved prompt **and** approved
+character **with** a stored image), then runs an idempotent pipeline:
+`CreateVideoGenerationBatchJob` creates exactly four records
+(`SubmitVideoGenerationJob` → `PollVideoGenerationStatusJob`). A deterministic
+`idempotency_key` over (video, prompt, character, aspect, variation) means a
+repeated request never creates duplicate active jobs. Each output is tracked
+**independently** — successes and failures are isolated (partial completion) —
+and the video aggregates to `completed` / `partially_completed` / `failed`.
+Failed outputs can be **retried** individually (`RetryVideoGenerationJob`), an
+in-progress batch can be **cancelled**, transient provider errors (rate-limit /
+timeout / 5xx) retry with backoff, and a polling deadline prevents stuck jobs.
+Providers can report status by **polling or a signed webhook**
+(`POST /api/v1/webhooks/video_generations`, HMAC-SHA256 verified). Downloading,
+validating, and storing the finished videos is Phase 9.
+
+| Method | Path | Auth | Purpose |
+|---|---|---|---|
+| GET | `/api/v1/projects/:id/videos/:vid/generations` | owner/admin | The four outputs |
+| POST | `/api/v1/projects/:id/videos/:vid/generations` | owner/admin | Start the batch (async, 202) |
+| POST | `/api/v1/projects/:id/videos/:vid/generations/:gid/retry` | owner/admin | Retry a failed output |
+| POST | `/api/v1/projects/:id/videos/:vid/generations/cancel` | owner/admin | Cancel an in-progress batch |
+| POST | `/api/v1/webhooks/video_generations` | public (HMAC) | Provider status callback |
+
+---
+
 ## Running tests
 
 **Everything, in containers:**
@@ -358,6 +396,10 @@ the full list. Key variables:
 | `OPENAI_API_KEY`    | OpenAI API key (prompts + transcription) | — (required in production)       |
 | `TEXT_GENERATION_PROVIDER` | Video-prompt provider (`openai`/`local`) | `local` (dev/test), `openai` (prod) |
 | `SPEECH_TO_TEXT_PROVIDER` | Transcription provider (`openai`/`fake`) | `fake` (dev/test), `openai` (prod) |
+| `VIDEO_GENERATION_PROVIDER` | Video provider (`google_labs`/`fake`) | `fake` (dev/test), `google_labs` (prod) |
+| `GOOGLE_LABS_API_BASE_URL` | Google Labs gateway base URL | — (required for `google_labs`) |
+| `GOOGLE_LABS_API_KEY` | Google Labs gateway bearer token | — (required for `google_labs`) |
+| `GOOGLE_LABS_WEBHOOK_SECRET` | HMAC secret for status webhooks | — |
 | `OPENAI_TRANSCRIBE_MODEL` | OpenAI transcription model         | `whisper-1`                      |
 | `VIDEO_AUDIO_MAX_BYTES` | Max idea-audio upload size (bytes)   | `26214400` (25 MB)               |
 | `VIDEO_LONG_FORM_ENABLED` | Allow 60–300s durations (else 15s only) | `false`                       |
@@ -379,8 +421,8 @@ the full list. Key variables:
 ## Roadmap
 
 Completed: authentication & roles → project lifecycle → Gemini character
-generation → email approval → video workspace & transcription → **OpenAI prompt
-generation & versioning (Phase 7)**. Next (see `docs/IMPLEMENTATION_PLAN.md`):
-Google Labs video generation → asset storage → notifications → admin portal →
-cost tracking → security hardening → production deployment. Phase 2 adds Flutter
-mobile apps.
+generation → email approval → video workspace & transcription → OpenAI prompt
+generation & versioning → **Google Labs video generation (Phase 8)**. Next (see
+`docs/IMPLEMENTATION_PLAN.md`): asset download/storage/delivery → notifications →
+admin portal → cost tracking → security hardening → production deployment. Phase 2
+adds Flutter mobile apps.

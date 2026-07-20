@@ -56,7 +56,22 @@ Rails.application.routes.draw do
               post :approve
             end
           end
+
+          # A video's four generation outputs (Phase 8).
+          resources :generations, only: %i[index create], controller: "video_generations" do
+            collection do
+              post :cancel
+            end
+            member do
+              post :retry
+            end
+          end
         end
+      end
+
+      # --- Provider webhooks (public, signature-verified, no auth) ---
+      namespace :webhooks do
+        post "video_generations", to: "video_generations#create"
       end
 
       # --- Public character approval (token-protected, no auth) ---

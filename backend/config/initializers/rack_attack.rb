@@ -32,6 +32,12 @@ class Rack::Attack
     req.ip if req.path.start_with?("/api/v1/approvals/character/")
   end
 
+  # Provider video-generation webhook. Signature-verified in the controller, but
+  # throttle by IP as defence in depth against a flood of forged/replayed calls.
+  throttle("webhooks/video_generations/ip", limit: 120, period: 60) do |req|
+    req.ip if req.post? && req.path == "/api/v1/webhooks/video_generations"
+  end
+
   # Consistent JSON error envelope for throttled requests.
   self.throttled_responder = lambda do |_request|
     body = { error: { code: "rate_limited", messages: ["Too many requests. Please slow down and try again later."] } }
