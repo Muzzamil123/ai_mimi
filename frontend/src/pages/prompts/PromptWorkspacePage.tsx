@@ -234,6 +234,14 @@ export function PromptWorkspacePage() {
               {current.estimated_cost != null && ` · ~$${current.estimated_cost}`}
             </p>
           )}
+
+          {current.status === 'approved' && (
+            <p className="auth-links">
+              <Link className="button-link" to={`/projects/${projectId}/videos/${vId}/generation`}>
+                Generate videos →
+              </Link>
+            </p>
+          )}
         </div>
       )}
 

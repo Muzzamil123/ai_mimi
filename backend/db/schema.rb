@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_07_21_000001) do
+ActiveRecord::Schema[7.1].define(version: 2026_07_21_000002) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "citext"
   enable_extension "plpgsql"
@@ -156,6 +156,38 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_21_000001) do
     t.index ["email"], name: "index_users_on_email", unique: true
   end
 
+  create_table "video_generations", force: :cascade do |t|
+    t.bigint "video_id", null: false
+    t.bigint "project_id", null: false
+    t.bigint "character_id", null: false
+    t.bigint "prompt_id", null: false
+    t.string "aspect_ratio", null: false
+    t.integer "variation_number", null: false
+    t.integer "duration_seconds", default: 15, null: false
+    t.string "provider"
+    t.string "provider_model"
+    t.string "provider_job_id"
+    t.string "provider_request_id"
+    t.integer "status", default: 0, null: false
+    t.integer "attempt_count", default: 0, null: false
+    t.integer "progress", default: 0, null: false
+    t.decimal "estimated_cost", precision: 12, scale: 6
+    t.string "error_code"
+    t.string "error_message"
+    t.string "idempotency_key", null: false
+    t.datetime "started_at"
+    t.datetime "completed_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["character_id"], name: "index_video_generations_on_character_id"
+    t.index ["idempotency_key"], name: "index_video_generations_on_idempotency_key", unique: true
+    t.index ["project_id"], name: "index_video_generations_on_project_id"
+    t.index ["prompt_id"], name: "index_video_generations_on_prompt_id"
+    t.index ["provider_job_id"], name: "index_video_generations_on_provider_job_id"
+    t.index ["video_id", "status"], name: "index_video_generations_on_video_id_and_status"
+    t.index ["video_id"], name: "index_video_generations_on_video_id"
+  end
+
   create_table "video_status_changes", force: :cascade do |t|
     t.bigint "video_id", null: false
     t.bigint "actor_id"
@@ -205,6 +237,10 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_21_000001) do
   add_foreign_key "projects", "users"
   add_foreign_key "prompts", "videos", on_delete: :cascade
   add_foreign_key "refresh_tokens", "users", on_delete: :cascade
+  add_foreign_key "video_generations", "characters", on_delete: :cascade
+  add_foreign_key "video_generations", "projects", on_delete: :cascade
+  add_foreign_key "video_generations", "prompts", on_delete: :cascade
+  add_foreign_key "video_generations", "videos", on_delete: :cascade
   add_foreign_key "video_status_changes", "users", column: "actor_id", on_delete: :nullify
   add_foreign_key "video_status_changes", "videos", on_delete: :cascade
   add_foreign_key "videos", "projects", on_delete: :cascade

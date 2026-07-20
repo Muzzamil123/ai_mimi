@@ -8,6 +8,8 @@ class Video < ApplicationRecord
   # approved one that automated video generation (Phase 8) will use.
   has_many :prompts, dependent: :destroy
   belongs_to :active_prompt, class_name: "Prompt", optional: true
+  # Video-generation outputs (Phase 8): four per generation request.
+  has_many :video_generations, dependent: :destroy
 
   # Phase 1 supports 15-second videos only. Longer durations (1–5 minutes) are a
   # future capability; the architecture supports them behind a flag so enabling
@@ -44,7 +46,9 @@ class Video < ApplicationRecord
     "generating" => %w[partially_completed completed failed cancelled],
     "partially_completed" => %w[generating completed failed cancelled],
     "completed" => %w[],
-    "failed" => %w[transcribing idea_ready generating_prompt draft cancelled],
+    # `generating` is reachable from `failed` so a fully-failed generation batch
+    # can retry a variant (Phase 8) without starting over.
+    "failed" => %w[transcribing idea_ready generating_prompt generating draft cancelled],
     "cancelled" => %w[]
   }.freeze
 
