@@ -5,6 +5,8 @@ module Api
     # Characters::* service objects; the controller only authorizes, delegates,
     # and renders.
     class CharactersController < BaseController
+      include StreamsCharacterImage
+
       before_action :set_project
       before_action :set_character,
                     only: %i[show update destroy generate approve reject reset image]
@@ -76,13 +78,7 @@ module Api
       # GET /projects/:project_id/character/image  (authenticated binary stream)
       def image
         authorize @character, :image?
-        img = @character.latest_image
-        raise ActiveRecord::RecordNotFound if img.nil?
-
-        data = Storage.adapter.read(img.storage_key)
-        raise ActiveRecord::RecordNotFound if data.nil?
-
-        send_data data, type: img.mime_type, disposition: "inline", filename: img.original_filename
+        stream_character_image(@character.latest_image)
       end
 
       private

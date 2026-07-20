@@ -44,6 +44,18 @@ module Api
         render_error(:unprocessable_entity, "invalid_state", e.message)
       end
 
+      rescue_from ::Approvals::InvalidToken do |e|
+        render_error(:not_found, "invalid_token", e.message)
+      end
+
+      rescue_from ::Approvals::LinkExpired do |e|
+        render_error(:gone, "link_expired", e.message)
+      end
+
+      rescue_from ::Approvals::AlreadyProcessed do |e|
+        render_error(:conflict, "already_processed", e.message)
+      end
+
       private
 
       def render_error(status, code, messages)

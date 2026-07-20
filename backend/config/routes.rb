@@ -42,6 +42,13 @@ Rails.application.routes.draw do
         end
       end
 
+      # --- Public character approval (token-protected, no auth) ---
+      # Reached from the emailed single-use link; the token is the authorization.
+      get    "approvals/character/:token",         to: "approvals#show"
+      post   "approvals/character/:token/approve", to: "approvals#approve"
+      post   "approvals/character/:token/reject",  to: "approvals#reject"
+      get    "approvals/character/:token/image",   to: "approvals#image"
+
       # --- Admin (RBAC; full portal in Phase 11) ---
       namespace :admin do
         resources :users, only: [:index]

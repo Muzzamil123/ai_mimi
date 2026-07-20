@@ -1,0 +1,11 @@
+Character rejected
+
+Hi <%= @user.name %> — the character "<%= @character.name %>" for your project
+"<%= @project.name %>" was rejected.
+<% if @feedback.present? %>
+Your feedback:
+<%= @feedback %>
+<% end %>
+You can regenerate a new character for the same project — no video can be
+generated until a character is approved. Open the project here:
+<%= @project_url %>

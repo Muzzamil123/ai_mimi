@@ -96,6 +96,41 @@ RSpec.describe Character, type: :model do
       expect(project.reload.active_character_id).to be_nil
       expect(project).to be_draft
     end
+
+    it "cancels any pending approval link so the old email link is voided" do
+      character = create(:character, project: project)
+      character.transition_to!(:generating)
+      character.transition_to!(:awaiting_approval)
+      request = create(:approval_request, project: project, character: character, user: project.user)
+
+      character.reset_by_admin!(actor: admin)
+
+      expect(request.reload).to be_cancelled
+    end
+  end
+
+  describe "voiding pending approval links on transition" do
+    it "cancels the pending approval link when the character is approved (any path)" do
+      character = create(:character, project: project)
+      character.transition_to!(:generating)
+      character.transition_to!(:awaiting_approval)
+      request = create(:approval_request, project: project, character: character, user: project.user)
+
+      character.transition_to!(:approved, actor: project.user)
+
+      expect(request.reload).to be_cancelled
+    end
+
+    it "cancels the pending approval link when the character is rejected" do
+      character = create(:character, project: project)
+      character.transition_to!(:generating)
+      character.transition_to!(:awaiting_approval)
+      request = create(:approval_request, project: project, character: character, user: project.user)
+
+      character.transition_to!(:rejected, actor: project.user)
+
+      expect(request.reload).to be_cancelled
+    end
   end
 
   describe "#latest_image" do

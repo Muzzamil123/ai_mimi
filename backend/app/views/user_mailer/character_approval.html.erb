@@ -7,13 +7,17 @@
 </p>
 
 <p>
-  <a href="<%= @review_url %>">Review and approve your character</a>
+  <a href="<%= @approve_url %>">Approve this character</a>
+  &nbsp;·&nbsp;
+  <a href="<%= @reject_url %>">Reject and give feedback</a>
 </p>
 
-<p>Or paste this link into your browser:</p>
-<p><%= @review_url %></p>
+<p>Or open the review page:</p>
+<p><a href="<%= @review_url %>"><%= @review_url %></a></p>
 
 <p>
-  If the character isn't quite right, you can reject it with feedback and
-  regenerate a new one — no video can be generated until a character is approved.
+  This secure link can be used once and expires
+  <%= @expires_at.strftime("%B %-d, %Y at %H:%M UTC") %>. If the character isn't
+  quite right, reject it with feedback and regenerate a new one — no video can be
+  generated until a character is approved.
 </p>

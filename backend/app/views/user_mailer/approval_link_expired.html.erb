@@ -1,0 +1,13 @@
+<h1>Your approval link expired</h1>
+
+<p>
+  Hi <%= @user.name %> — the approval link for the character
+  <strong><%= @character.name %></strong> in your project
+  <strong><%= @project.name %></strong> expired before it was used.
+</p>
+
+<p>
+  No action was taken and your character is still waiting. Open the project to
+  review it and send a fresh approval link:
+</p>
+<p><a href="<%= @project_url %>"><%= @project_url %></a></p>

@@ -17,17 +17,56 @@ class UserMailer < ApplicationMailer
   end
 
   # Notifies the project owner that their generated character is awaiting
-  # approval. Sent to the authenticated account owner's email (business rule);
-  # Phase 5 adds a tokenized one-click approval link.
-  def character_approval(character)
+  # approval, with a secure single-use link (approve/reject/review all resolve
+  # the same token). Sent to the authenticated account owner's current email
+  # (mandatory business rule).
+  def character_approval(character, approval_request, raw_token)
     @character = character
     @project = character.project
     @user = @project.user
-    @review_url = frontend_url("/projects/#{@project.id}/character")
+    @approval_request = approval_request
+    @expires_at = approval_request.expires_at
+    @approve_url = approval_url(raw_token, intent: "approve")
+    @reject_url = approval_url(raw_token, intent: "reject")
+    @review_url = approval_url(raw_token)
     mail(to: @user.email, subject: %(Your character for "#{@project.name}" is ready for approval))
   end
 
+  # Confirms the character was approved and the project is ready for videos.
+  def character_approved(character)
+    @character = character
+    @project = character.project
+    @user = @project.user
+    @project_url = frontend_url("/projects/#{@project.id}/character")
+    mail(to: @user.email, subject: %(Your character for "#{@project.name}" is approved))
+  end
+
+  # Confirms the character was rejected and can be regenerated in the project.
+  def character_rejected(character)
+    @character = character
+    @project = character.project
+    @user = @project.user
+    @feedback = character.rejection_feedback
+    @project_url = frontend_url("/projects/#{@project.id}/character")
+    mail(to: @user.email, subject: %(Your character for "#{@project.name}" was rejected))
+  end
+
+  # Notifies the owner that an unused approval link expired before they acted.
+  def approval_link_expired(approval_request)
+    @approval_request = approval_request
+    @project = approval_request.project
+    @character = approval_request.character
+    @user = approval_request.user
+    @project_url = frontend_url("/projects/#{@project.id}/character")
+    mail(to: @user.email, subject: %(Your character approval link for "#{@project.name}" expired))
+  end
+
   private
+
+  # Builds a link into the React public approval page for a raw token.
+  def approval_url(raw_token, **query)
+    frontend_url("/approvals/character/#{raw_token}", **query)
+  end
 
   # Builds a link into the React app. Base URL is env-driven so links are correct
   # per environment.

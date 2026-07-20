@@ -26,6 +26,12 @@ class Rack::Attack
     req.ip if req.post? && req.path == "/api/v1/auth/email/verify"
   end
 
+  # Public, token-protected character-approval links. Throttle by IP to blunt
+  # token guessing/brute force (tokens are 48-byte random, but defence in depth).
+  throttle("approvals/character/ip", limit: 30, period: 60) do |req|
+    req.ip if req.path.start_with?("/api/v1/approvals/character/")
+  end
+
   # Consistent JSON error envelope for throttled requests.
   self.throttled_responder = lambda do |_request|
     body = { error: { code: "rate_limited", messages: ["Too many requests. Please slow down and try again later."] } }

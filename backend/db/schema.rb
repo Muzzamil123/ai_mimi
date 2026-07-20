@@ -10,10 +10,30 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_07_16_100003) do
+ActiveRecord::Schema[7.1].define(version: 2026_07_17_100001) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "citext"
   enable_extension "plpgsql"
+
+  create_table "approval_requests", force: :cascade do |t|
+    t.bigint "project_id", null: false
+    t.bigint "character_id", null: false
+    t.bigint "user_id", null: false
+    t.string "recipient_email", null: false
+    t.string "token_digest", null: false
+    t.integer "status", default: 0, null: false
+    t.text "feedback"
+    t.datetime "expires_at", null: false
+    t.datetime "responded_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["character_id"], name: "index_approval_requests_on_character_id"
+    t.index ["character_id"], name: "index_approval_requests_on_pending_character", unique: true, where: "(status = 0)"
+    t.index ["project_id"], name: "index_approval_requests_on_project_id"
+    t.index ["status"], name: "index_approval_requests_on_status"
+    t.index ["token_digest"], name: "index_approval_requests_on_token_digest", unique: true
+    t.index ["user_id"], name: "index_approval_requests_on_user_id"
+  end
 
   create_table "character_images", force: :cascade do |t|
     t.bigint "character_id", null: false
@@ -112,6 +132,9 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_16_100003) do
     t.index ["email"], name: "index_users_on_email", unique: true
   end
 
+  add_foreign_key "approval_requests", "characters", on_delete: :cascade
+  add_foreign_key "approval_requests", "projects", on_delete: :cascade
+  add_foreign_key "approval_requests", "users", on_delete: :cascade
   add_foreign_key "character_images", "characters", on_delete: :cascade
   add_foreign_key "characters", "projects", on_delete: :cascade
   add_foreign_key "project_status_changes", "projects", on_delete: :cascade

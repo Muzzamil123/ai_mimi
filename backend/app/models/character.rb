@@ -4,6 +4,7 @@ class Character < ApplicationRecord
            -> { order(created_at: :asc) },
            class_name: "CharacterImage",
            dependent: :destroy
+  has_many :approval_requests, dependent: :destroy
 
   enum :status, {
     pending: 0,
@@ -63,8 +64,22 @@ class Character < ApplicationRecord
     transaction do
       apply_status_side_effects(target)
       update!(status: target)
+      # Leaving `awaiting_approval` (approved or rejected, via the portal OR the
+      # email token) voids any still-live approval link so it can't be reused and
+      # the expiry sweep never emails a stale "link expired" notice. The token
+      # flow marks its own request first, so this only sweeps orphaned links.
+      void_pending_approval_requests! if %w[approved rejected].include?(target)
       sync_project_status!(target, actor: actor, reason: reason)
     end
+  end
+
+  # Cancels any pending approval link for this character. Used when the character
+  # leaves the approval state and when a fresh link supersedes an old one.
+  def void_pending_approval_requests!
+    approval_requests.pending.update_all(
+      status: ApprovalRequest.statuses[:cancelled],
+      updated_at: Time.current
+    )
   end
 
   # Audited administrative reset back to `pending` from any status, including an
@@ -73,6 +88,7 @@ class Character < ApplicationRecord
   def reset_by_admin!(actor:, reason: "reset by administrator")
     transaction do
       project.update!(active_character_id: nil) if project.active_character_id == id
+      void_pending_approval_requests!
       images.destroy_all
       update!(
         status: :pending,

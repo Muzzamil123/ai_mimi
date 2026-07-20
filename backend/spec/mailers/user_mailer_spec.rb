@@ -30,16 +30,58 @@ RSpec.describe UserMailer, type: :mailer do
   describe "character_approval" do
     let(:project) { create(:project, user: user, name: "Baby Shark") }
     let(:character) { create(:character, project: project, name: "Sharky") }
-    let(:mail) { described_class.character_approval(character) }
+    let(:approval_request) { create(:approval_request, project: project, character: character, user: user) }
+    let(:raw_token) { "raw-approval-token-xyz" }
+    let(:mail) { described_class.character_approval(character, approval_request, raw_token) }
 
     it "is sent to the authenticated account owner's email" do
       expect(mail.to).to eq([ "m@example.com" ])
       expect(mail.subject).to match(/ready for approval/i)
     end
 
-    it "links to the project's character review page" do
-      expect(mail.body.encoded).to include("/projects/#{project.id}/character")
+    it "embeds the secure token in tokenized approve/reject links" do
+      expect(mail.body.encoded).to include("/approvals/character/#{raw_token}")
+      expect(mail.body.encoded).to include("intent=approve")
+      expect(mail.body.encoded).to include("intent=reject")
       expect(mail.body.encoded).to include("Sharky")
+    end
+  end
+
+  describe "character_approved" do
+    let(:project) { create(:project, user: user, name: "Baby Shark") }
+    let(:character) { create(:character, :approved, project: project, name: "Sharky") }
+    let(:mail) { described_class.character_approved(character) }
+
+    it "confirms approval to the owner and links to the project" do
+      expect(mail.to).to eq([ "m@example.com" ])
+      expect(mail.subject).to match(/approved/i)
+      expect(mail.body.encoded).to include("/projects/#{project.id}/character")
+    end
+  end
+
+  describe "character_rejected" do
+    let(:project) { create(:project, user: user, name: "Baby Shark") }
+    let(:character) do
+      create(:character, :rejected, project: project, name: "Sharky", rejection_feedback: "too old")
+    end
+    let(:mail) { described_class.character_rejected(character) }
+
+    it "confirms rejection to the owner including the feedback" do
+      expect(mail.to).to eq([ "m@example.com" ])
+      expect(mail.subject).to match(/rejected/i)
+      expect(mail.body.encoded).to include("too old")
+    end
+  end
+
+  describe "approval_link_expired" do
+    let(:project) { create(:project, user: user, name: "Baby Shark") }
+    let(:approval_request) { create(:approval_request, :expired, project: project, user: user) }
+    let(:mail) { described_class.approval_link_expired(approval_request) }
+
+    it "notifies the owner that the link expired" do
+      expect(mail.to).to eq([ "m@example.com" ])
+      expect(mail.subject).to match(/expired/i)
+      expect(mail.body.encoded).to include("/projects/#{project.id}/character")
     end
   end
 end

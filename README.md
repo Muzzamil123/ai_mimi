@@ -8,7 +8,7 @@ prompt and four Google Labs renders (two 3:4, two 9:16, 15 seconds).
 This repository is being built **phase by phase** per
 [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md).
 
-> **Current status: Phase 4 — Gemini Character Generation** (Phases 1–3 complete).
+> **Current status: Phase 5 — Email Approval Workflow** (Phases 1–4 complete).
 > Delivered so far: health/tooling/Docker/CI foundation; JWT auth (access +
 > rotating refresh tokens), registration, login/logout, password reset, email
 > verification, `/me`, RBAC (user/admin), auth rate limiting; **project
@@ -187,6 +187,47 @@ storage keys are never exposed.
 | POST | `/api/v1/projects/:id/character/reject` | owner/admin | Reject with optional feedback |
 | POST | `/api/v1/projects/:id/character/reset` | admin | Audited reset of a locked character |
 | GET | `/api/v1/projects/:id/character/image` | owner/admin | Stream the latest image |
+
+---
+
+## Email approval workflow
+
+Once a character reaches `awaiting_approval`, `SendCharacterApprovalEmailJob`
+mints a **secure, single-use, expiring `ApprovalRequest`** and emails the project
+owner a tokenized link. The raw token lives only in the email; the database
+stores a SHA-256 digest (mirrors the refresh-token design). The recipient is
+always resolved from the owner's **current** account email — never hardcoded.
+
+The link resolves to a **public, token-protected** approval page (no login) at
+`/approvals/character/:token`. The token is the authorization, so these
+endpoints skip authentication and are rate-limited (Rack::Attack). Approving
+delegates to the same `Characters::ApproveCharacter` service the portal uses —
+the character/project state machine stays the single source of truth — then
+locks the character, readies the project, and sends a confirmation email.
+Rejecting records feedback, moves the project to `character_rejected` (from which
+the same project can regenerate), and confirms by email.
+
+Links are **single-use** (a spent token → `409 already_processed`) and expire
+after `APPROVAL_LINK_TTL_HOURS` (default 72). Expiry is enforced lazily on access
+and proactively by `ExpireApprovalRequestsJob`, which also emails an
+"link expired" notice. `CreateApprovalRequest` cancels any prior pending link
+(cancel-and-replace), so a retry or regeneration never leaves two live tokens.
+Unknown/tampered tokens 404 and are logged as suspicious attempts.
+
+Emails sent: **character ready for approval**, **approved**, **rejected**,
+**approval link expired** — all to the owner's account email.
+
+> **Scheduling `ExpireApprovalRequestsJob`:** there is no scheduler gem yet
+> (Phase 13 hardening). Run it periodically via cron/`sidekiq-cron` or manually:
+> `ExpireApprovalRequestsJob.perform_later`. Expiry is still enforced lazily on
+> every token access, so links never work past their window regardless.
+
+| Method | Path | Auth | Purpose |
+|---|---|---|---|
+| GET | `/api/v1/approvals/character/:token` | public (token) | Resolve link state (pending/approved/rejected/expired) |
+| POST | `/api/v1/approvals/character/:token/approve` | public (token) | Approve & lock the character |
+| POST | `/api/v1/approvals/character/:token/reject` | public (token) | Reject with optional feedback |
+| GET | `/api/v1/approvals/character/:token/image` | public (token) | Stream the character preview |
 
 ---
 

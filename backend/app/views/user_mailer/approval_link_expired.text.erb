@@ -1,0 +1,9 @@
+Your approval link expired
+
+Hi <%= @user.name %> — the approval link for the character
+"<%= @character.name %>" in your project "<%= @project.name %>" expired before it
+was used.
+
+No action was taken and your character is still waiting. Open the project to
+review it and send a fresh approval link:
+<%= @project_url %>
