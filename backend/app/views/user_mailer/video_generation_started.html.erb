@@ -1,0 +1,14 @@
+<h1>Generating your videos 🎬</h1>
+
+<p>
+  Hi <%= @user.name %> — we've started generating videos for
+  <strong><%= @video.title %></strong> in project <strong><%= @project.name %></strong>,
+  using your approved character
+  <% if @character %><strong><%= @character.name %></strong><% end %>.
+</p>
+
+<p>
+  Four 15-second outputs (two 3:4 and two 9:16) are being created. We'll email you
+  when they're ready. You can follow progress here:
+</p>
+<p><a href="<%= @generation_url %>"><%= @generation_url %></a></p>

@@ -1,0 +1,8 @@
+Generating your videos
+
+Hi <%= @user.name %> — we've started generating videos for "<%= @video.title %>"
+in project "<%= @project.name %>"<% if @character %>, using your approved character "<%= @character.name %>"<% end %>.
+
+Four 15-second outputs (two 3:4 and two 9:16) are being created. We'll email you
+when they're ready. Follow progress here:
+<%= @generation_url %>

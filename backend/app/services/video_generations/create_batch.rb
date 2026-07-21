@@ -20,6 +20,7 @@ module VideoGenerations
       return if prompt.nil? || character.nil?
 
       records = []
+      started = false
       @video.with_lock do
         # Only act while the video is awaiting/undergoing generation for this
         # batch; a superseded/cancelled run safely no-ops.
@@ -29,10 +30,15 @@ module VideoGenerations
           find_or_create_record(prompt, character, variant)
         end
 
-        @video.transition_to!(:generating, actor: @actor, reason: "video generation started") if @video.queued?
+        if @video.queued?
+          @video.transition_to!(:generating, actor: @actor, reason: "video generation started")
+          started = true
+        end
       end
 
       records.select(&:pending?).each { |record| SubmitVideoGenerationJob.perform_later(record.id) }
+      # Notify the owner generation has started (post-commit, exactly once).
+      SendVideoGenerationStartedEmailJob.perform_later(@video.id) if started
       records
     end
 

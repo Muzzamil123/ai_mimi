@@ -1,0 +1,14 @@
+Your videos are ready
+
+Hi <%= @user.name %> — all four outputs for "<%= @video.title %>" in project
+"<%= @project.name %>"<% if @character %> (character "<%= @character.name %>")<% end %> are complete.
+
+Outputs:
+<% @outputs.each do |output| -%>
+- <%= output[:label] %> — <%= output[:status] %><% if output[:download_url] %> — <%= output[:download_url] %><% end %>
+<% end -%>
+
+Preview and download everything from your portal:
+<%= @outputs_url %>
+
+Download links are secure and expire; re-open the portal for fresh links.

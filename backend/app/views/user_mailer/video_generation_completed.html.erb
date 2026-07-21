@@ -1,0 +1,25 @@
+<h1>Your videos are ready ✅</h1>
+
+<p>
+  Hi <%= @user.name %> — all four outputs for <strong><%= @video.title %></strong>
+  in project <strong><%= @project.name %></strong>
+  <% if @character %>(character <strong><%= @character.name %></strong>)<% end %>
+  are complete.
+</p>
+
+<h2>Outputs</h2>
+<ul>
+  <% @outputs.each do |output| %>
+    <li>
+      <%= output[:label] %> — <%= output[:status] %>
+      <% if output[:download_url] %>
+        — <a href="<%= output[:download_url] %>">Download</a>
+      <% end %>
+    </li>
+  <% end %>
+</ul>
+
+<p>Preview and download everything from your portal:</p>
+<p><a href="<%= @outputs_url %>"><%= @outputs_url %></a></p>
+
+<p class="muted">Download links are secure and expire; re-open the portal for fresh links.</p>

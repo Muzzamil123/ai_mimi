@@ -61,7 +61,75 @@ class UserMailer < ApplicationMailer
     mail(to: @user.email, subject: %(Your character approval link for "#{@project.name}" expired))
   end
 
+  # Notifies the owner that a video's prompt has been generated and is ready to
+  # review/approve.
+  def prompt_ready(video)
+    assign_video(video)
+    @prompt_url = frontend_url("/projects/#{@project.id}/videos/#{video.id}/prompt")
+    mail(to: @user.email, subject: %(Your prompt for "#{video.title}" is ready to review))
+  end
+
+  # Notifies the owner that video generation has started (four outputs).
+  def video_generation_started(video)
+    assign_video(video)
+    @generation_url = frontend_url("/projects/#{@project.id}/videos/#{video.id}/generation")
+    mail(to: @user.email, subject: %(Generating videos for "#{video.title}"))
+  end
+
+  # Confirms all four outputs completed, with secure download links.
+  def video_generation_completed(video)
+    assign_video(video)
+    @outputs = output_summary(video)
+    @outputs_url = frontend_url("/projects/#{@project.id}/videos/#{video.id}/outputs")
+    mail(to: @user.email, subject: %(Your videos for "#{video.title}" are ready))
+  end
+
+  # Notifies the owner that some outputs completed and some failed.
+  def video_generation_partially_completed(video)
+    assign_video(video)
+    @outputs = output_summary(video)
+    @outputs_url = frontend_url("/projects/#{@project.id}/videos/#{video.id}/outputs")
+    mail(to: @user.email, subject: %(Some videos for "#{video.title}" are ready))
+  end
+
+  # Notifies the owner that generation failed for all outputs.
+  def video_generation_failed(video)
+    assign_video(video)
+    @outputs = output_summary(video)
+    @generation_url = frontend_url("/projects/#{@project.id}/videos/#{video.id}/generation")
+    mail(to: @user.email, subject: %(Video generation for "#{video.title}" failed))
+  end
+
   private
+
+  # Shared assignments for video emails. Character name is the "preview"
+  # reference; the portal link shows the actual image.
+  def assign_video(video)
+    @video = video
+    @project = video.project
+    @user = @project.user
+    @character = @project.active_character
+  end
+
+  # Per-output status plus an absolute, signed download link for ready outputs.
+  def output_summary(video)
+    video.video_generations.includes(:video_asset)
+         .order(:aspect_ratio, :variation_number).map do |generation|
+      asset = generation.video_asset
+      {
+        label: generation.label,
+        status: generation.status,
+        download_url: asset&.ready? ? absolute_url(Downloads::SignedUrl.asset_path(asset)) : nil
+      }
+    end
+  end
+
+  # Absolute URL to the backend's public download endpoint (emails can't use a
+  # relative path). API_PUBLIC_URL is the backend's externally-reachable base.
+  def absolute_url(path)
+    base = ENV.fetch("API_PUBLIC_URL", "http://localhost:3000")
+    URI.join(base, path).to_s
+  end
 
   # Builds a link into the React public approval page for a raw token.
   def approval_url(raw_token, **query)

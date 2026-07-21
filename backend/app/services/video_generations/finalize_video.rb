@@ -10,6 +10,8 @@ module VideoGenerations
     end
 
     def call
+      finalized = false
+
       @video.with_lock do
         next unless @video.generating? || @video.partially_completed?
 
@@ -26,8 +28,14 @@ module VideoGenerations
             :failed
           end
 
-        @video.transition_to!(target, reason: "video generation #{target}") unless @video.status == target.to_s
+        unless @video.status == target.to_s
+          @video.transition_to!(target, reason: "video generation #{target}")
+          finalized = true
+        end
       end
+
+      # Email the outcome (post-commit, exactly once — only the finalizing call).
+      SendVideoCompletionEmailJob.perform_later(@video.id) if finalized
     end
 
     private

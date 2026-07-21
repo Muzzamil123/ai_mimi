@@ -1,0 +1,18 @@
+<h1>Video generation failed ❌</h1>
+
+<p>
+  Hi <%= @user.name %> — unfortunately every output for
+  <strong><%= @video.title %></strong> in project <strong><%= @project.name %></strong>
+  failed to generate. No charge was completed for failed outputs. You can retry
+  from the portal.
+</p>
+
+<h2>Outputs</h2>
+<ul>
+  <% @outputs.each do |output| %>
+    <li><%= output[:label] %> — <%= output[:status] %></li>
+  <% end %>
+</ul>
+
+<p>Retry generation here:</p>
+<p><a href="<%= @generation_url %>"><%= @generation_url %></a></p>

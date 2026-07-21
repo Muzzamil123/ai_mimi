@@ -21,6 +21,7 @@ import { VideosListPage } from '../pages/videos/VideosListPage'
 import { PromptWorkspacePage } from '../pages/prompts/PromptWorkspacePage'
 import { GenerationWorkspacePage } from '../pages/generations/GenerationWorkspacePage'
 import { VideoOutputsPage } from '../pages/outputs/VideoOutputsPage'
+import { NotificationsPage } from '../pages/notifications/NotificationsPage'
 import { AdminRoute } from './AdminRoute'
 import { ProtectedRoute } from './ProtectedRoute'
 
@@ -43,6 +44,7 @@ export function AppRoutes() {
         {/* Authenticated routes */}
         <Route element={<ProtectedRoute />}>
           <Route path="profile" element={<ProfilePage />} />
+          <Route path="notifications" element={<NotificationsPage />} />
           <Route path="projects" element={<ProjectsListPage />} />
           <Route path="projects/new" element={<NewProjectPage />} />
           <Route path="projects/:id" element={<ProjectDetailPage />} />
