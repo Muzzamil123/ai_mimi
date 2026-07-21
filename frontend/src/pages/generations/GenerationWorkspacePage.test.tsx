@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { VideoDetail } from '../../api/videos'
-import type { VideoGeneration } from '../../api/videoGenerations'
+import type { GenerationEstimate, VideoGeneration } from '../../api/videoGenerations'
 import { GenerationWorkspacePage } from './GenerationWorkspacePage'
 
 const getVideo = vi.fn()
@@ -11,6 +11,7 @@ const listVideoGenerations = vi.fn()
 const startVideoGeneration = vi.fn()
 const retryVideoGeneration = vi.fn()
 const cancelVideoGeneration = vi.fn()
+const getGenerationEstimate = vi.fn()
 
 vi.mock('../../api/videos', () => ({
   getVideo: (...args: unknown[]) => getVideo(...args),
@@ -21,9 +22,14 @@ vi.mock('../../api/videoGenerations', () => ({
   startVideoGeneration: (...args: unknown[]) => startVideoGeneration(...args),
   retryVideoGeneration: (...args: unknown[]) => retryVideoGeneration(...args),
   cancelVideoGeneration: (...args: unknown[]) => cancelVideoGeneration(...args),
+  getGenerationEstimate: (...args: unknown[]) => getGenerationEstimate(...args),
 }))
 
 vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }))
+
+// Mutable auth stub — flip isAdmin per test.
+const authValue = { isAdmin: false }
+vi.mock('../../auth/AuthContext', () => ({ useAuth: () => authValue }))
 
 function makeVideo(overrides: Partial<VideoDetail> = {}): VideoDetail {
   return {
@@ -69,6 +75,20 @@ function makeGeneration(overrides: Partial<VideoGeneration> = {}): VideoGenerati
   }
 }
 
+function makeEstimate(overrides: Partial<GenerationEstimate['budget']> = {}): GenerationEstimate {
+  return {
+    estimate: {
+      currency: 'USD',
+      variant_count: 4,
+      duration_seconds: 15,
+      per_variant: 0.75,
+      total: 3.0,
+      configured: true,
+    },
+    budget: { status: 'ok', blocked: false, entries: [], ...overrides },
+  }
+}
+
 function renderPage() {
   return render(
     <MemoryRouter initialEntries={['/projects/1/videos/5/generation']}>
@@ -86,6 +106,9 @@ describe('GenerationWorkspacePage', () => {
     startVideoGeneration.mockReset()
     retryVideoGeneration.mockReset()
     cancelVideoGeneration.mockReset()
+    getGenerationEstimate.mockReset()
+    getGenerationEstimate.mockResolvedValue(makeEstimate())
+    authValue.isAdmin = false
   })
 
   it('prompts to approve a prompt when the video is not ready', async () => {
@@ -96,16 +119,44 @@ describe('GenerationWorkspacePage', () => {
     expect(await screen.findByText('Approve a prompt first')).toBeInTheDocument()
   })
 
-  it('shows the confirmation screen and starts generation', async () => {
+  it('shows the confirmation screen, the cost estimate, and starts generation', async () => {
     const user = userEvent.setup()
     getVideo.mockResolvedValue(makeVideo())
     listVideoGenerations.mockResolvedValue({ video_generations: [] })
     startVideoGeneration.mockResolvedValue({ video_generations: [] })
     renderPage()
 
-    await user.click(await screen.findByRole('button', { name: 'Start generation' }))
+    const startButton = await screen.findByRole('button', { name: 'Start generation' })
+    expect(await screen.findByText(/Estimated cost:/)).toBeInTheDocument()
 
-    await waitFor(() => expect(startVideoGeneration).toHaveBeenCalledWith(1, 5))
+    await user.click(startButton)
+
+    await waitFor(() => expect(startVideoGeneration).toHaveBeenCalledWith(1, 5, false))
+  })
+
+  it('disables start for a non-admin when a hard budget limit is hit', async () => {
+    getVideo.mockResolvedValue(makeVideo())
+    listVideoGenerations.mockResolvedValue({ video_generations: [] })
+    getGenerationEstimate.mockResolvedValue(makeEstimate({ status: 'exceeded', blocked: true }))
+    renderPage()
+
+    expect(await screen.findByRole('button', { name: 'Blocked by budget limit' })).toBeDisabled()
+    expect(screen.getByText(/exceed a hard budget limit/)).toBeInTheDocument()
+  })
+
+  it('lets an admin override a hard budget block', async () => {
+    const user = userEvent.setup()
+    window.confirm = vi.fn(() => true)
+    authValue.isAdmin = true
+    getVideo.mockResolvedValue(makeVideo())
+    listVideoGenerations.mockResolvedValue({ video_generations: [] })
+    getGenerationEstimate.mockResolvedValue(makeEstimate({ status: 'exceeded', blocked: true }))
+    startVideoGeneration.mockResolvedValue({ video_generations: [] })
+    renderPage()
+
+    await user.click(await screen.findByRole('button', { name: /Override budget/ }))
+
+    await waitFor(() => expect(startVideoGeneration).toHaveBeenCalledWith(1, 5, true))
   })
 
   it('renders the four output cards with statuses', async () => {

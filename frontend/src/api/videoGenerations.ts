@@ -30,6 +30,34 @@ export interface VideoGenerationListResponse {
   video_generations: VideoGeneration[]
 }
 
+export interface GenerationEstimateEntry {
+  scope_type: string
+  provider: string | null
+  period: string
+  level: 'warning' | 'exceeded'
+  hard: boolean
+  limit: number
+  spent: number
+  projected: number
+  percentage: number | null
+}
+
+export interface GenerationEstimate {
+  estimate: {
+    currency: string
+    variant_count: number
+    duration_seconds: number
+    per_variant: number | null
+    total: number | null
+    configured: boolean
+  }
+  budget: {
+    status: 'ok' | 'warning' | 'exceeded'
+    blocked: boolean
+    entries: GenerationEstimateEntry[]
+  }
+}
+
 function base(projectId: number, videoId: number): string {
   return `/projects/${projectId}/videos/${videoId}/generations`
 }
@@ -42,12 +70,26 @@ export async function listVideoGenerations(
   return data
 }
 
-/** Starts the batch (four outputs). Responds 202 with the current batch. */
+/** The estimated cost of generating this video's outputs + budget status. */
+export async function getGenerationEstimate(
+  projectId: number,
+  videoId: number,
+): Promise<GenerationEstimate> {
+  const { data } = await apiClient.get<GenerationEstimate>(`${base(projectId, videoId)}/estimate`)
+  return data
+}
+
+/**
+ * Starts the batch (four outputs). Responds 202 with the current batch.
+ * `override` asks the server to bypass a hard budget block (honored for admins).
+ */
 export async function startVideoGeneration(
   projectId: number,
   videoId: number,
+  override = false,
 ): Promise<VideoGenerationListResponse> {
-  const { data } = await apiClient.post<VideoGenerationListResponse>(base(projectId, videoId))
+  const body = override ? { override: true } : undefined
+  const { data } = await apiClient.post<VideoGenerationListResponse>(base(projectId, videoId), body)
   return data
 }
 
