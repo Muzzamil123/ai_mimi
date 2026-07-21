@@ -8,7 +8,7 @@ prompt and four Google Labs renders (two 3:4, two 9:16, 15 seconds).
 This repository is being built **phase by phase** per
 [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md).
 
-> **Current status: Phase 13 — Security, Auditability, Reliability & Observability** (Phases 1–12 complete).
+> **Current status: Phase 14 — Production Deployment & Release Readiness** (Phases 1–13 complete).
 > Delivered so far: health/tooling/Docker/CI foundation; JWT auth (access +
 > rotating refresh tokens), registration, login/logout, password reset, email
 > verification, `/me`, RBAC (user/admin), auth rate limiting; **project
@@ -29,8 +29,11 @@ This repository is being built **phase by phase** per
 > estimate; and now **production hardening** — shared-Redis rate limiting,
 > encrypted provider credentials, provider circuit breakers, an account-deletion
 > and data-retention workflow, liveness/readiness probes, request-id tracing,
-> app-wide audit coverage, and Brakeman + bundler-audit in CI. Production
-> deployment is the next phase.
+> app-wide audit coverage, and Brakeman + bundler-audit in CI; and now
+> **production deployment readiness** — an S3-compatible object-storage backend,
+> production Docker images + `docker-compose.prod.yml` (Rails/Sidekiq/nginx SPA),
+> an automated end-to-end acceptance test, release & smoke scripts, and full
+> deployment/environment/provider documentation.
 
 ---
 
@@ -526,6 +529,38 @@ Production-hardening controls (full detail in
 
 ---
 
+## Production deployment (Phase 14)
+
+Deploy-ready artifacts and docs (full detail in
+[`docs/operations/deployment.md`](docs/operations/deployment.md),
+[environment reference](docs/operations/environment.md),
+[provider setup](docs/operations/providers.md)):
+
+- **Object storage** — `Storage::S3` (S3 / Cloudflare R2 / MinIO via
+  `STORAGE_BACKEND=s3`), private objects served through the existing signed-URL
+  flow so a CDN can front the app.
+- **Production images** — the existing Rails `backend/Dockerfile` (API + worker)
+  and a new multi-stage `infrastructure/docker/frontend.Dockerfile` (React build
+  → nginx, SPA fallback, `/api` reverse-proxy).
+- **`docker-compose.prod.yml`** — Rails API + Sidekiq worker + Postgres + Redis +
+  nginx SPA, with readiness-based healthchecks, restart policies, and env_file
+  secrets.
+- **Release validation** — an automated **end-to-end acceptance spec** drives the
+  full Phase-1 workflow (register → character + approval → video → prompt → four
+  outputs → download → completion email); `infrastructure/scripts/release.sh`
+  (scanners + full suites) and `smoke.sh` (post-deploy probes).
+
+```bash
+cp .env.example .env.production   # fill in real secrets
+docker compose -f docker-compose.prod.yml --env-file .env.production up -d --build
+BASE_URL=http://localhost infrastructure/scripts/smoke.sh
+```
+
+Actual cloud provisioning (managed datastores, domain/TLS, live provider keys)
+is operator-run per the deployment guide.
+
+---
+
 ## Running tests
 
 **Everything, in containers:**
@@ -614,6 +649,7 @@ generation → email approval → video workspace & transcription → OpenAI pro
 generation & versioning → Google Labs video generation → asset download,
 validation, storage & delivery → notifications & completion emails → admin
 portal & operational controls → cost tracking, usage limits & budget controls →
-**security, auditability, reliability & observability (Phase 13)**.
-Next (see `docs/IMPLEMENTATION_PLAN.md`): production deployment & release
-readiness. Phase 2 adds Flutter mobile apps.
+security, auditability, reliability & observability →
+**production deployment & release readiness (Phase 14)**.
+That completes the Phase 1 web platform. **Phase 2** (Flutter mobile apps on the
+same Rails APIs) is next.

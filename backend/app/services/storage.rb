@@ -27,6 +27,8 @@ module Storage
       case ENV.fetch("STORAGE_BACKEND", "local")
       when "local"
         LocalDisk.new
+      when "s3"
+        S3.new
       else
         raise Error, "Unknown storage backend: #{ENV['STORAGE_BACKEND']}"
       end
