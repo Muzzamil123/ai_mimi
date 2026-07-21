@@ -64,7 +64,13 @@ export function ProfilePage() {
   })
 
   const onDelete = async () => {
-    if (!window.confirm('Delete your account? This cannot be undone.')) return
+    const confirmed = window.confirm(
+      'Permanently delete your account?\n\n' +
+        'This is IRREVERSIBLE. Your sessions end immediately, and your projects, ' +
+        'characters, videos, and generated media will be permanently purged and your ' +
+        'personal information anonymized.',
+    )
+    if (!confirmed) return
     try {
       await deleteAccount()
       toast.success('Account deleted')
