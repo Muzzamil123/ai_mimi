@@ -13,18 +13,24 @@
 # these in the portal. Idempotent upsert keyed by provider/service/model.
 # Rates are illustrative starting points — verify against current provider
 # pricing before relying on them for billing.
-[
-  { provider: "openai", service_type: "text_generation", model: "",
-    per_input_token: "0.00000015", per_output_token: "0.00000060" },
-  { provider: "openai", service_type: "speech_to_text", model: "",
-    per_second: "0.0001" },
-  { provider: "gemini", service_type: "character_image", model: "",
-    per_image: "0.04" },
-  { provider: "google_labs", service_type: "video_generation", model: "",
-    per_second: "0.05" }
-].each do |attrs|
-  price = ProviderPrice.find_or_initialize_by(
-    provider: attrs[:provider], service_type: attrs[:service_type], model: attrs[:model]
-  )
-  price.update!(attrs)
+#
+# Skipped in the test environment: `db:prepare` seeds a freshly-created database,
+# and the specs manage their own pricing fixtures — seeded rows would otherwise
+# collide with factories and skew "no pricing configured" expectations.
+unless Rails.env.test?
+  [
+    { provider: "openai", service_type: "text_generation", model: "",
+      per_input_token: "0.00000015", per_output_token: "0.00000060" },
+    { provider: "openai", service_type: "speech_to_text", model: "",
+      per_second: "0.0001" },
+    { provider: "gemini", service_type: "character_image", model: "",
+      per_image: "0.04" },
+    { provider: "google_labs", service_type: "video_generation", model: "",
+      per_second: "0.05" }
+  ].each do |attrs|
+    price = ProviderPrice.find_or_initialize_by(
+      provider: attrs[:provider], service_type: attrs[:service_type], model: attrs[:model]
+    )
+    price.update!(attrs)
+  end
 end
