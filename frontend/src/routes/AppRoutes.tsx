@@ -1,6 +1,17 @@
 import { Route, Routes } from 'react-router-dom'
 import { AppLayout } from '../components/layout/AppLayout'
+import { AdminLayout } from '../components/layout/AdminLayout'
+import { AdminAuditLogsPage } from '../pages/admin/AdminAuditLogsPage'
+import { AdminDashboardPage } from '../pages/admin/AdminDashboardPage'
+import { AdminEmailsPage } from '../pages/admin/AdminEmailsPage'
+import { AdminGenerationsPage } from '../pages/admin/AdminGenerationsPage'
+import { AdminHealthPage } from '../pages/admin/AdminHealthPage'
+import { AdminProjectDetailPage } from '../pages/admin/AdminProjectDetailPage'
+import { AdminProjectsPage } from '../pages/admin/AdminProjectsPage'
+import { AdminSettingsPage } from '../pages/admin/AdminSettingsPage'
+import { AdminUsagePage } from '../pages/admin/AdminUsagePage'
 import { AdminUsersPage } from '../pages/admin/AdminUsersPage'
+import { AdminVideosPage } from '../pages/admin/AdminVideosPage'
 import { ForgotPasswordPage } from '../pages/auth/ForgotPasswordPage'
 import { LoginPage } from '../pages/auth/LoginPage'
 import { ProfilePage } from '../pages/auth/ProfilePage'
@@ -61,9 +72,21 @@ export function AppRoutes() {
           <Route path="projects/:id/videos/:videoId/outputs" element={<VideoOutputsPage />} />
         </Route>
 
-        {/* Admin-only routes */}
+        {/* Admin-only routes (portal shell + modules) */}
         <Route element={<AdminRoute />}>
-          <Route path="admin/users" element={<AdminUsersPage />} />
+          <Route path="admin" element={<AdminLayout />}>
+            <Route index element={<AdminDashboardPage />} />
+            <Route path="users" element={<AdminUsersPage />} />
+            <Route path="projects" element={<AdminProjectsPage />} />
+            <Route path="projects/:id" element={<AdminProjectDetailPage />} />
+            <Route path="videos" element={<AdminVideosPage />} />
+            <Route path="generations" element={<AdminGenerationsPage />} />
+            <Route path="emails" element={<AdminEmailsPage />} />
+            <Route path="usage" element={<AdminUsagePage />} />
+            <Route path="audit-logs" element={<AdminAuditLogsPage />} />
+            <Route path="settings" element={<AdminSettingsPage />} />
+            <Route path="health" element={<AdminHealthPage />} />
+          </Route>
         </Route>
 
         <Route path="*" element={<NotFoundPage />} />
