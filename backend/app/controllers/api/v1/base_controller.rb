@@ -7,6 +7,11 @@ module Api
       include Authenticatable
       include Pundit::Authorization
       include TokenResponder
+      include Auditable
+
+      # Echo the request id on every response so clients and log aggregators can
+      # correlate a response with its structured log line (Phase 13).
+      before_action :set_request_id_header
 
       # When maintenance mode is on, reject mutating requests from ordinary
       # authenticated users (admins and unauthenticated auth/public flows are
@@ -98,6 +103,10 @@ module Api
       end
 
       private
+
+      def set_request_id_header
+        response.set_header("X-Request-Id", request.request_id) if request.request_id
+      end
 
       def enforce_maintenance_mode!
         return if request.get? || request.head?

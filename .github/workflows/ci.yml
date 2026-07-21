@@ -60,6 +60,12 @@ jobs:
       - name: Lint (RuboCop)
         run: bundle exec rubocop
 
+      - name: Static security analysis (Brakeman)
+        run: bundle exec brakeman -q --no-pager -i config/brakeman.ignore
+
+      - name: Dependency vulnerability scan (bundler-audit)
+        run: bundle exec bundler-audit check --update
+
       - name: Prepare test database
         run: bundle exec rails db:prepare
 

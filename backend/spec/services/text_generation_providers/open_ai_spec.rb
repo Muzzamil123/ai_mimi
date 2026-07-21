@@ -65,6 +65,6 @@ RSpec.describe TextGenerationProviders::OpenAI do
     ENV["OPENAI_API_KEY"] = ""
 
     expect { provider.generate_video_prompt(idea: "x", context: context) }
-      .to raise_error(TextGenerationProviders::Error, /OPENAI_API_KEY/)
+      .to raise_error(TextGenerationProviders::Error, /API key is not configured/)
   end
 end

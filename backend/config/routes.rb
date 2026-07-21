@@ -8,6 +8,9 @@ Rails.application.routes.draw do
     namespace :v1 do
       # Deep health check: API, database, Redis, and Sidekiq connectivity.
       get "health", to: "health#show"
+      # Kubernetes-style probes: liveness (always 200) and readiness (DB+Redis).
+      get "health/live", to: "health#live"
+      get "health/ready", to: "health#ready"
 
       # --- Authentication ---
       namespace :auth do

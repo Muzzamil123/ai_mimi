@@ -14,12 +14,11 @@ module Api
         render json: UserBlueprint.render_as_hash(current_user)
       end
 
-      # Account-deletion request: soft-delete and revoke all sessions.
+      # Account-deletion request: revoke sessions + soft-delete now, then purge
+      # data/PII asynchronously (Accounts::RequestDeletion). Audited.
       def destroy
-        current_user.transaction do
-          current_user.refresh_tokens.active.find_each(&:revoke!)
-          current_user.update!(status: :deleted)
-        end
+        ::Accounts::RequestDeletion.call(current_user)
+        audit!("account.deletion_requested", resource: current_user)
         head :no_content
       end
 

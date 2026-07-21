@@ -81,6 +81,6 @@ RSpec.describe CharacterImageProviders::Gemini do
     ENV["GEMINI_API_KEY"] = ""
 
     expect { provider.generate(prompt: "x") }
-      .to raise_error(CharacterImageProviders::Error, /GEMINI_API_KEY/)
+      .to raise_error(CharacterImageProviders::Error, /API key is not configured/)
   end
 end

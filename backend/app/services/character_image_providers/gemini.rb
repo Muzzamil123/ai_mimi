@@ -8,6 +8,8 @@ module CharacterImageProviders
   # response and errors into CharacterImageProviders::Result / ::Error. This is
   # the only place Gemini's request/response shape is known.
   class Gemini < Base
+    include Providers::Breakable
+
     DEFAULT_BASE_URL = "https://generativelanguage.googleapis.com".freeze
     DEFAULT_MODEL = "gemini-2.5-flash-image".freeze
     DEFAULT_TIMEOUT = 60
@@ -21,6 +23,8 @@ module CharacterImageProviders
       parse(response)
     rescue Net::OpenTimeout, Net::ReadTimeout
       raise TimeoutError
+    rescue Providers::CircuitOpenError => e
+      raise Error.new(e.message, retryable: true)
     rescue Errno::ECONNREFUSED, SocketError => e
       raise Error.new("Gemini connection error: #{e.message}", retryable: true)
     end
@@ -74,8 +78,8 @@ module CharacterImageProviders
     end
 
     def post(body)
-      key = ENV["GEMINI_API_KEY"].to_s
-      raise Error.new("GEMINI_API_KEY is not configured", retryable: false) if key.empty?
+      key = Providers::Credentials.fetch("gemini_api_key", env: "GEMINI_API_KEY").to_s
+      raise Error.new("Gemini API key is not configured", retryable: false) if key.empty?
 
       uri = URI.join("#{base_url}/", "v1beta/models/#{model}:generateContent")
       http = Net::HTTP.new(uri.host, uri.port)
@@ -88,7 +92,7 @@ module CharacterImageProviders
       request["x-goog-api-key"] = key
       request.body = JSON.generate(body)
 
-      http.request(request)
+      with_circuit("character_image:gemini") { http.request(request) }
     end
 
     def image_part(payload)

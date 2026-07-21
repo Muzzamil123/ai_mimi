@@ -1,10 +1,20 @@
-# Rate limiting / brute-force protection for authentication endpoints.
-# NOTE: uses a per-process in-memory store for now. Phase 13 (security hardening)
-# moves this to a shared Redis-backed store so limits are enforced across all
-# processes; that also resolves the ActiveSupport RedisCacheStore/connection_pool
-# incompatibility present in this dependency set.
+# Rate limiting / brute-force protection.
+# The counter store is shared Redis in real environments so limits are enforced
+# across every web process (Phase 13). Tests use a per-process memory store (and
+# Rack::Attack is disabled there anyway) to stay hermetic.
 class Rack::Attack
-  cache.store = ActiveSupport::Cache::MemoryStore.new
+  cache.store =
+    if Rails.env.test?
+      ActiveSupport::Cache::MemoryStore.new
+    else
+      ActiveSupport::Cache::RedisCacheStore.new(
+        url: ENV.fetch("RACK_ATTACK_REDIS_URL", ENV.fetch("REDIS_URL", "redis://localhost:6379/0")),
+        namespace: "rack_attack",
+        error_handler: ->(method:, returning:, exception:) {
+          Rails.logger.warn(message: "rack_attack_cache_error", method: method, error: exception.class.name)
+        }
+      )
+    end
 
   throttle("auth/login/ip", limit: 10, period: 60) do |req|
     req.ip if req.post? && req.path == "/api/v1/auth/login"
@@ -48,6 +58,13 @@ class Rack::Attack
   # token brute force (tokens are signed + expiring, but defence in depth).
   throttle("downloads/ip", limit: 120, period: 60) do |req|
     req.ip if req.get? && req.path == "/api/v1/downloads"
+  end
+
+  # Video generation is the most expensive operation (four provider renders per
+  # request). Throttle batch starts by IP as defence in depth on top of budget
+  # limits (Phase 12) and ownership authorization.
+  throttle("generations/create/ip", limit: 20, period: 60) do |req|
+    req.ip if req.post? && req.path.match?(%r{\A/api/v1/projects/\d+/videos/\d+/generations\z})
   end
 
   # Consistent JSON error envelope for throttled requests.

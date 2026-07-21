@@ -1,0 +1,9 @@
+{
+  "ignored_warnings": [
+    {
+      "fingerprint": "d84924377155b41e094acae7404ec2e521629d86f97b0ff628e3d1b263f8101c",
+      "note": "Accepted risk (Phase 13): Rails 7.1 reached end-of-life for security support on 2025-10-01. Tracked follow-up: upgrade to the maintained 7.2.x line, then remove this ignore. See docs/operations/security.md."
+    }
+  ],
+  "brakeman_version": "6.2.2"
+}

@@ -1,9 +1,9 @@
-module Admin
-  # Writes a single immutable AuditLog row. This is the one place audit records
-  # are created; the Auditable controller concern calls it with the request
-  # context so every privileged action captures who, what, where, and why.
+module Audit
+  # Writes a single immutable AuditLog row — the one place audit records are
+  # created. The Auditable controller concern calls it with the request context
+  # so every recorded action captures who, what, which resource, and from where.
   # Secrets must never be passed in metadata — callers redact first.
-  class RecordAudit < ApplicationService
+  class Record < ApplicationService
     def initialize(actor:, action:, resource: nil, metadata: {}, request_context: {})
       @actor = actor
       @action = action.to_s

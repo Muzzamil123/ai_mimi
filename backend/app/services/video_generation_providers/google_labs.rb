@@ -12,6 +12,8 @@ module VideoGenerationProviders
   # responses into Result / StatusResult / Error. Without credentials it raises
   # NotConfigured (the deterministic Fake is used off-production instead).
   class GoogleLabs < Base
+    include Providers::Breakable
+
     DEFAULT_TIMEOUT = 60
     DEFAULT_MODEL = "google-labs-video".freeze
     # Per-15s-clip list price; overridable so cost tracking stays configuration.
@@ -95,7 +97,7 @@ module VideoGenerationProviders
 
     def request(method, path, body = nil)
       base = ENV["GOOGLE_LABS_API_BASE_URL"].to_s
-      key = ENV["GOOGLE_LABS_API_KEY"].to_s
+      key = Providers::Credentials.fetch("google_labs_api_key", env: "GOOGLE_LABS_API_KEY").to_s
       raise NotConfigured if base.empty? || key.empty?
 
       uri = URI.join("#{base}/", path)
@@ -115,9 +117,11 @@ module VideoGenerationProviders
         request.body = JSON.generate(body)
       end
 
-      http.request(request)
+      with_circuit("video_generation:google_labs") { http.request(request) }
     rescue Net::OpenTimeout, Net::ReadTimeout
       raise TimeoutError
+    rescue Providers::CircuitOpenError => e
+      raise Error.new(e.message, retryable: true)
     rescue Errno::ECONNREFUSED, SocketError => e
       raise Error.new("Google Labs connection error: #{e.message}", retryable: true)
     end

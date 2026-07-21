@@ -7,6 +7,8 @@ module TextGenerationProviders
   # place OpenAI's request/response shape is known for prompt generation. Secrets
   # (the API key) are never logged or returned.
   class OpenAI < Base
+    include Providers::Breakable
+
     DEFAULT_BASE_URL = "https://api.openai.com".freeze
     DEFAULT_MODEL = "gpt-4o-mini".freeze
     DEFAULT_TIMEOUT = 60
@@ -28,6 +30,8 @@ module TextGenerationProviders
       parse(response)
     rescue Net::OpenTimeout, Net::ReadTimeout
       raise TimeoutError
+    rescue Providers::CircuitOpenError => e
+      raise Error.new(e.message, retryable: true)
     rescue Errno::ECONNREFUSED, SocketError => e
       raise Error.new("OpenAI connection error: #{e.message}", retryable: true)
     end
@@ -78,8 +82,8 @@ module TextGenerationProviders
     end
 
     def post(body)
-      key = ENV["OPENAI_API_KEY"].to_s
-      raise Error.new("OPENAI_API_KEY is not configured", retryable: false) if key.empty?
+      key = Providers::Credentials.fetch("openai_api_key", env: "OPENAI_API_KEY").to_s
+      raise Error.new("OpenAI API key is not configured", retryable: false) if key.empty?
 
       uri = URI.join("#{base_url}/", "v1/chat/completions")
       http = Net::HTTP.new(uri.host, uri.port)
@@ -92,7 +96,7 @@ module TextGenerationProviders
       request["Authorization"] = "Bearer #{key}"
       request.body = JSON.generate(body)
 
-      http.request(request)
+      with_circuit("text_generation:openai") { http.request(request) }
     end
 
     def error_message(payload, code)

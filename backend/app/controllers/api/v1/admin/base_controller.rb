@@ -6,7 +6,7 @@ module Api
       # admin role (401 if unauthenticated, 403 if a non-admin). Provides the
       # `audit!` helper so mutating actions record to the audit trail.
       class BaseController < Api::V1::BaseController
-        include Auditable
+        # `audit!` is provided by Auditable (included in the API base controller).
         include Paginatable
 
         before_action :require_admin!

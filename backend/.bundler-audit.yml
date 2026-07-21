@@ -1,0 +1,18 @@
+# Accepted-risk advisories (Phase 13). Every entry below is a Rails 7.1
+# end-of-life advisory whose only fix is Rails >= 7.2.3.1 (there is no 7.1.x
+# patch). They are accepted, not unknown: the platform is an API-only backend
+# that does not expose the affected surfaces (number/HTML helpers rendered from
+# untrusted input, Active Storage proxy multi-range) to attacker-controlled
+# input in an exploitable way. See docs/operations/security.md ("Accepted
+# risks"). TRACKED FOLLOW-UP: upgrade Rails to the maintained 7.2.x line, then
+# delete this file and re-audit.
+ignore:
+  - CVE-2026-33168 # actionview
+  - CVE-2026-33169 # activesupport
+  - CVE-2026-33170 # activesupport
+  - CVE-2026-33173 # activestorage
+  - CVE-2026-33174 # activestorage
+  - CVE-2026-33176 # activesupport
+  - CVE-2026-33195 # activestorage
+  - CVE-2026-33202 # activestorage
+  - CVE-2026-33658 # activestorage
