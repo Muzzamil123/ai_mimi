@@ -16,10 +16,37 @@ module Api
         render json: { video_generations: VideoGenerationBlueprint.render_as_hash(scope) }
       end
 
+      # GET /projects/:project_id/videos/:video_id/generation_estimate
+      # The estimated cost of generating this video's outputs, plus the budget
+      # status, so the user sees cost (and any warning/block) before committing.
+      def estimate
+        authorize VideoGeneration.new(video_id: @video.id), :create?
+        est = ::Costs::EstimateGeneration.call(@video)
+        budget = ::Budgets::Evaluate.call(
+          user: @video.project.user,
+          project: @video.project,
+          provider: VideoGenerationProviders.default_provider,
+          prospective_cost: est.total || 0
+        )
+        render json: {
+          estimate: {
+            currency: est.currency,
+            variant_count: est.variant_count,
+            duration_seconds: est.duration_seconds,
+            per_variant: est.per_variant&.to_f,
+            total: est.total&.to_f,
+            configured: est.configured
+          },
+          budget: { status: budget.status, blocked: budget.blocked, entries: budget.entries }
+        }
+      end
+
       # POST /projects/:project_id/videos/:video_id/generations  (start the batch)
       def create
         authorize VideoGeneration.new(video_id: @video.id), :create?
-        ::VideoGenerations::StartGeneration.call(@video, actor: current_user)
+        # An admin may override a hard budget block; ignored for normal users.
+        override = ActiveModel::Type::Boolean.new.cast(params[:override])
+        ::VideoGenerations::StartGeneration.call(@video, actor: current_user, override: override)
         render json: batch_payload, status: :accepted
       end
 

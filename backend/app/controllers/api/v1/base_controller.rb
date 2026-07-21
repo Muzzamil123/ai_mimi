@@ -77,6 +77,10 @@ module Api
         render_error(:unprocessable_entity, "invalid_state", e.message)
       end
 
+      rescue_from ::Budgets::LimitExceeded do |e|
+        render_error(:unprocessable_entity, "budget_exceeded", e.message)
+      end
+
       rescue_from ::Notifications::Error do |e|
         render_error(:unprocessable_entity, "invalid_state", e.message)
       end

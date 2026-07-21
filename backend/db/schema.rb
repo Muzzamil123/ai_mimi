@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_07_22_000002) do
+ActiveRecord::Schema[7.1].define(version: 2026_07_22_000005) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "citext"
   enable_extension "plpgsql"
@@ -49,6 +49,21 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_22_000002) do
     t.index ["actor_type", "actor_id"], name: "index_audit_logs_on_actor_type_and_actor_id"
     t.index ["created_at"], name: "index_audit_logs_on_created_at"
     t.index ["resource_type", "resource_id"], name: "index_audit_logs_on_resource_type_and_resource_id"
+  end
+
+  create_table "budget_policies", force: :cascade do |t|
+    t.string "scope_type", null: false
+    t.bigint "scope_id"
+    t.string "provider"
+    t.decimal "daily_limit", precision: 14, scale: 6
+    t.decimal "monthly_limit", precision: 14, scale: 6
+    t.integer "warning_percentage", default: 80, null: false
+    t.string "action_on_limit", default: "warn", null: false
+    t.boolean "enabled", default: true, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["enabled"], name: "index_budget_policies_on_enabled"
+    t.index ["scope_type", "scope_id"], name: "index_budget_policies_on_scope_type_and_scope_id"
   end
 
   create_table "character_images", force: :cascade do |t|
@@ -177,6 +192,54 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_22_000002) do
     t.index ["video_id", "status"], name: "index_prompts_on_video_id_and_status"
     t.index ["video_id", "version"], name: "index_prompts_on_video_id_and_version", unique: true
     t.index ["video_id"], name: "index_prompts_on_video_id"
+  end
+
+  create_table "provider_prices", force: :cascade do |t|
+    t.string "provider", null: false
+    t.string "service_type", null: false
+    t.string "model"
+    t.decimal "per_input_token", precision: 16, scale: 10
+    t.decimal "per_output_token", precision: 16, scale: 10
+    t.decimal "per_image", precision: 14, scale: 6
+    t.decimal "per_second", precision: 14, scale: 6
+    t.decimal "per_request", precision: 14, scale: 6
+    t.string "currency", default: "USD", null: false
+    t.boolean "enabled", default: true, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["provider", "service_type", "model"], name: "index_provider_prices_on_provider_and_service_type_and_model", unique: true
+  end
+
+  create_table "provider_usages", force: :cascade do |t|
+    t.bigint "user_id"
+    t.bigint "project_id"
+    t.bigint "video_id"
+    t.string "source_type"
+    t.bigint "source_id"
+    t.string "provider", null: false
+    t.string "service_type", null: false
+    t.string "model"
+    t.string "provider_request_id"
+    t.integer "units"
+    t.integer "input_tokens"
+    t.integer "output_tokens"
+    t.integer "generated_images"
+    t.decimal "generated_seconds", precision: 12, scale: 3
+    t.decimal "estimated_cost", precision: 14, scale: 6, default: "0.0", null: false
+    t.string "currency", default: "USD", null: false
+    t.jsonb "metadata", default: {}, null: false
+    t.datetime "occurred_at", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["occurred_at"], name: "index_provider_usages_on_occurred_at"
+    t.index ["project_id", "occurred_at"], name: "index_provider_usages_on_project_id_and_occurred_at"
+    t.index ["project_id"], name: "index_provider_usages_on_project_id"
+    t.index ["provider"], name: "index_provider_usages_on_provider"
+    t.index ["service_type"], name: "index_provider_usages_on_service_type"
+    t.index ["source_type", "source_id"], name: "index_provider_usages_on_source_type_and_source_id", unique: true
+    t.index ["user_id", "occurred_at"], name: "index_provider_usages_on_user_id_and_occurred_at"
+    t.index ["user_id"], name: "index_provider_usages_on_user_id"
+    t.index ["video_id"], name: "index_provider_usages_on_video_id"
   end
 
   create_table "refresh_tokens", force: :cascade do |t|
@@ -310,6 +373,9 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_22_000002) do
   add_foreign_key "projects", "characters", column: "active_character_id", on_delete: :nullify
   add_foreign_key "projects", "users"
   add_foreign_key "prompts", "videos", on_delete: :cascade
+  add_foreign_key "provider_usages", "projects", on_delete: :nullify
+  add_foreign_key "provider_usages", "users", on_delete: :nullify
+  add_foreign_key "provider_usages", "videos", on_delete: :nullify
   add_foreign_key "refresh_tokens", "users", on_delete: :cascade
   add_foreign_key "video_assets", "video_assets", column: "duplicate_of_id", on_delete: :nullify
   add_foreign_key "video_assets", "video_generations", on_delete: :cascade

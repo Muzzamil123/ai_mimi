@@ -37,10 +37,29 @@ module VideoGenerations
         error_message: nil
       )
       @generation.transition_to!(:processing)
+      record_usage(result)
       @generation
     end
 
     private
+
+    # Ledger the billable render (Phase 12), keyed by the generation so a retried
+    # submit updates the same row rather than double-counting.
+    def record_usage(result)
+      Usage::Record.call(
+        source: @generation,
+        provider: result.provider,
+        service_type: "video_generation",
+        model: result.model,
+        user: @generation.project&.user,
+        project: @generation.project,
+        video: @generation.video,
+        provider_request_id: result.provider_request_id,
+        generated_seconds: @generation.duration_seconds,
+        units: 1,
+        provider_reported_cost: result.estimated_cost
+      )
+    end
 
     # The approved character image bytes handed to the provider. Every generated
     # video must use the project's approved character (mandatory attachment).

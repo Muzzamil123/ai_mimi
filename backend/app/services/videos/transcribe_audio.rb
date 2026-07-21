@@ -36,10 +36,29 @@ module Videos
         transcription_failure_reason: nil
       )
       @video.transition_to!(:idea_ready, actor: @actor, reason: "audio transcribed")
+      record_usage(result)
       @video
     end
 
     private
+
+    # Ledger the billable transcription (Phase 12), keyed by the video so a
+    # re-transcribe updates the same row.
+    def record_usage(result)
+      project = @video.project
+      Usage::Record.call(
+        source: @video,
+        provider: result.provider,
+        service_type: "speech_to_text",
+        model: result.model,
+        user: project&.user,
+        project: project,
+        video: @video,
+        provider_request_id: result.provider_request_id,
+        units: 1,
+        provider_reported_cost: result.estimated_cost
+      )
+    end
 
     # Best-effort content type from the stored key's extension when the caller did
     # not pass one (e.g. a re-run that only has the key).
