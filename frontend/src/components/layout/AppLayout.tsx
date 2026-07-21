@@ -63,7 +63,7 @@ export function AppLayout() {
           )}
           {isAuthenticated && (
             <>
-              {isAdmin && <NavLink to="/admin/users">Admin</NavLink>}
+              {isAdmin && <NavLink to="/admin">Admin</NavLink>}
               <NavLink to="/projects">Projects</NavLink>
               <NavLink to="/notifications">
                 Notifications{unread > 0 && <span className="badge">{unread}</span>}

@@ -97,8 +97,3 @@ export async function deleteMe(): Promise<void> {
   setAuthToken(null)
   clearStoredRefreshToken()
 }
-
-export async function listUsers(): Promise<AuthUser[]> {
-  const { data } = await apiClient.get<AuthUser[]>('/admin/users')
-  return data
-}

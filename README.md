@@ -8,18 +8,23 @@ prompt and four Google Labs renders (two 3:4, two 9:16, 15 seconds).
 This repository is being built **phase by phase** per
 [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md).
 
-> **Current status: Phase 10 — Notifications & Completion Emails** (Phases 1–9 complete).
+> **Current status: Phase 11 — Admin Portal & Operational Controls** (Phases 1–10 complete).
 > Delivered so far: health/tooling/Docker/CI foundation; JWT auth (access +
 > rotating refresh tokens), registration, login/logout, password reset, email
 > verification, `/me`, RBAC (user/admin), auth rate limiting; **project
 > management** — CRUD, per-user unique slugs, a guarded status lifecycle with
 > history, archive/restore, ownership enforcement, and list search/filter/
-> pagination; and **character generation** — one character per project via a
+> pagination; **character generation** — one character per project via a
 > Gemini image adapter, an async Sidekiq pipeline (prompt → image → store →
 > approval email), secure storage behind a storage abstraction, an
 > approve/reject/regenerate lifecycle with a locked approved character and an
-> audited admin reset, and a React character workspace. Videos and the remaining
-> providers arrive in later phases.
+> audited admin reset; **videos, prompts, video generation, asset delivery, and
+> notifications**; and now a complete **admin portal** — audited operational
+> APIs across users, projects, characters, videos, prompts, generations, assets,
+> email deliveries, usage, and audit logs; retry/cancel/suspend/reset controls;
+> encrypted, secret-masking platform settings; a maintenance-mode switch; and a
+> React admin section. Cost/budget tracking and production hardening arrive in
+> later phases.
 
 ---
 
@@ -403,6 +408,52 @@ unread count and mark-as-read; an email-preferences screen toggles optional type
 
 ---
 
+## Admin portal & operational controls (Phase 11)
+
+Administrators operate and troubleshoot the platform without direct database
+access. Every admin endpoint is **admin-only** (401 unauthenticated / 403
+non-admin) and every **privileged/destructive action is audited** to an
+append-only **`AuditLog`** (actor, action, resource, metadata, IP, user agent).
+Operational actions delegate to the existing domain services and then record the
+audit entry; provider retries reuse the same idempotent jobs as the user flows.
+
+**Platform settings** live in an encrypted, registry-backed **`PlatformSetting`**
+store. Secret values (provider API keys) are encrypted at rest and **never echoed
+back after saving** — the API returns only whether a secret is configured. A
+**`maintenance_mode`** switch blocks ordinary users' write requests with `503`
+while leaving admins and sign-in available. (Provider *credentials* are still read
+from ENV at runtime; unifying them onto encrypted settings is Phase 13.)
+
+The **usage** endpoint aggregates the provider cost/token data already recorded on
+each call; the full cost dashboard, budgets, and limits are **Phase 12**.
+
+| Method | Path | Purpose |
+|---|---|---|
+| GET | `/api/v1/admin/dashboard` | Counts by status, totals, live health snapshot |
+| GET | `/api/v1/admin/health` | Infrastructure health (always 200, status in body) |
+| GET | `/api/v1/admin/usage` | Provider usage/cost summary (read-only) |
+| GET / PATCH | `/api/v1/admin/settings` | View (secrets masked) / update platform config |
+| GET | `/api/v1/admin/users` | List users (search `q`, `role`/`status` filters) |
+| GET | `/api/v1/admin/users/:id` | Inspect a user |
+| POST | `/api/v1/admin/users/:id/suspend` | Suspend (revokes refresh tokens) |
+| POST | `/api/v1/admin/users/:id/reactivate` | Reactivate a suspended user |
+| GET | `/api/v1/admin/projects` | List all projects (filters `status`, `user_id`, `q`) |
+| GET | `/api/v1/admin/projects/:id` | Inspect (owner, character, videos, generations, history) |
+| POST | `/api/v1/admin/projects/:id/archive` | Archive a project |
+| POST | `/api/v1/admin/projects/:id/reset_character` | Reset the approved character (with reason) |
+| POST | `/api/v1/admin/projects/:id/retry_character` | Retry a failed character generation |
+| GET | `/api/v1/admin/videos` / `:id` | List / inspect videos |
+| POST | `/api/v1/admin/videos/:id/retry_prompt` | Retry prompt generation |
+| GET | `/api/v1/admin/video_generations` | List generations (status filter = failed-jobs view) |
+| POST | `/api/v1/admin/video_generations/:id/retry` | Retry a failed variant |
+| POST | `/api/v1/admin/video_generations/:id/retry_asset` | Re-run download/validation/storage |
+| POST | `/api/v1/admin/video_generations/:id/cancel` | Cancel a stuck batch |
+| GET | `/api/v1/admin/email_deliveries` | Delivery logs (full diagnostics) |
+| POST | `/api/v1/admin/email_deliveries/:id/retry` | Retry a failed/bounced email |
+| GET | `/api/v1/admin/audit_logs` | Audit trail (filter `action_name`, actor, resource) |
+
+---
+
 ## Running tests
 
 **Everything, in containers:**
@@ -489,6 +540,7 @@ the full list. Key variables:
 Completed: authentication & roles → project lifecycle → Gemini character
 generation → email approval → video workspace & transcription → OpenAI prompt
 generation & versioning → Google Labs video generation → asset download,
-validation, storage & delivery → **notifications & completion emails (Phase 10)**.
-Next (see `docs/IMPLEMENTATION_PLAN.md`): admin portal → cost tracking → security
+validation, storage & delivery → notifications & completion emails → **admin
+portal & operational controls (Phase 11)**.
+Next (see `docs/IMPLEMENTATION_PLAN.md`): cost tracking → security
 hardening → production deployment. Phase 2 adds Flutter mobile apps.
