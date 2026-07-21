@@ -5,10 +5,11 @@ module VideoGenerations
   # job. All preconditions are re-verified under the video lock so a concurrent
   # start can't launch two batches (duplicate-request prevention).
   class StartGeneration < ApplicationService
-    def initialize(video, actor: nil)
+    def initialize(video, actor: nil, override: false)
       @video = video
       @project = video.project
       @actor = actor
+      @override = override
     end
 
     def call
@@ -25,6 +26,8 @@ module VideoGenerations
         raise VideoGenerations::InvalidState, "The approved character has no image to use as a reference"
       end
 
+      enforce_budget!
+
       @video.with_lock do
         unless @video.prompt_ready?
           raise VideoGenerations::InvalidState, startable_error_message
@@ -38,6 +41,26 @@ module VideoGenerations
     end
 
     private
+
+    # Blocks the batch when it would exceed a hard (block) budget limit, unless
+    # an admin explicitly overrides. Soft/warning limits never block here — they
+    # surface to the user via the estimate endpoint before they commit.
+    def enforce_budget!
+      estimate = Costs::EstimateGeneration.call(@video)
+      result = Budgets::Evaluate.call(
+        user: @project.user,
+        project: @project,
+        provider: VideoGenerationProviders.default_provider,
+        prospective_cost: estimate.total || 0
+      )
+      return unless result.blocked?
+      return if @override && @actor&.admin?
+
+      raise Budgets::LimitExceeded.new(
+        "This generation would exceed a budget limit",
+        entries: result.entries.select { |e| e[:level] == "exceeded" && e[:hard] }
+      )
+    end
 
     def startable_error_message
       if @video.queued? || @video.generating?

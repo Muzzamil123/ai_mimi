@@ -4,11 +4,14 @@ import { toast } from 'sonner'
 import { getVideo, type VideoDetail } from '../../api/videos'
 import {
   cancelVideoGeneration,
+  getGenerationEstimate,
   listVideoGenerations,
   retryVideoGeneration,
   startVideoGeneration,
+  type GenerationEstimate,
   type VideoGeneration,
 } from '../../api/videoGenerations'
+import { useAuth } from '../../auth/AuthContext'
 import { EmptyState } from '../../components/EmptyState'
 import { GenerationStatusBadge } from '../../components/GenerationStatusBadge'
 import { Loading } from '../../components/Loading'
@@ -32,8 +35,10 @@ export function GenerationWorkspacePage() {
   const projectId = Number(id)
   const vId = Number(videoId)
 
+  const { isAdmin } = useAuth()
   const [state, setState] = useState<LoadState>({ kind: 'loading' })
   const [busy, setBusy] = useState(false)
+  const [estimate, setEstimate] = useState<GenerationEstimate | null>(null)
 
   const load = useCallback(
     async (options: { silent?: boolean } = {}) => {
@@ -71,6 +76,28 @@ export function GenerationWorkspacePage() {
     }
   }, [active, load])
 
+  // Fetch the pre-generation cost estimate + budget status once the video is
+  // ready to start (approved prompt, no batch yet).
+  const readyToStart =
+    state.kind === 'ready' && state.video.status === 'prompt_ready' && state.generations.length === 0
+  useEffect(() => {
+    if (!readyToStart) {
+      setEstimate(null)
+      return
+    }
+    let cancelled = false
+    void getGenerationEstimate(projectId, vId)
+      .then((result) => {
+        if (!cancelled) setEstimate(result)
+      })
+      .catch(() => {
+        if (!cancelled) setEstimate(null)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [readyToStart, projectId, vId])
+
   const run = async (action: () => Promise<unknown>, errorMessage: string) => {
     setBusy(true)
     try {
@@ -83,11 +110,16 @@ export function GenerationWorkspacePage() {
     }
   }
 
-  const onStart = () =>
+  const onStart = (override = false) =>
     run(async () => {
-      await startVideoGeneration(projectId, vId)
+      await startVideoGeneration(projectId, vId, override)
       toast.success('Generation started — creating four outputs…')
     }, 'Unable to start generation')
+
+  const onOverrideStart = () => {
+    if (!window.confirm('This exceeds a budget limit. Override and start anyway?')) return
+    void onStart(true)
+  }
 
   const onRetry = (generationId: number) =>
     run(async () => {
@@ -179,9 +211,49 @@ export function GenerationWorkspacePage() {
             This creates <strong>four 15-second outputs</strong> — two 3:4 and two 9:16 — using the
             project&apos;s approved character and this video&apos;s approved prompt.
           </p>
-          <button type="button" disabled={busy} onClick={() => void onStart()}>
-            Start generation
-          </button>
+
+          {estimate && (
+            <p className="generation-estimate">
+              {estimate.estimate.configured && estimate.estimate.total != null ? (
+                <>
+                  Estimated cost:{' '}
+                  <strong>
+                    ${estimate.estimate.total.toFixed(2)} {estimate.estimate.currency}
+                  </strong>{' '}
+                  for {estimate.estimate.variant_count} outputs
+                </>
+              ) : (
+                <span className="admin-muted">Cost estimate unavailable (pricing not configured).</span>
+              )}
+            </p>
+          )}
+
+          {estimate && estimate.budget.status !== 'ok' && (
+            <div
+              className={`budget-banner ${
+                estimate.budget.status === 'exceeded' ? 'budget-banner--error' : 'budget-banner--warning'
+              }`}
+              role="status"
+            >
+              {estimate.budget.blocked
+                ? 'This generation would exceed a hard budget limit.'
+                : 'This generation approaches or exceeds a budget limit.'}
+            </div>
+          )}
+
+          {estimate?.budget.blocked && !isAdmin ? (
+            <button type="button" disabled>
+              Blocked by budget limit
+            </button>
+          ) : estimate?.budget.blocked && isAdmin ? (
+            <button type="button" className="danger" disabled={busy} onClick={onOverrideStart}>
+              Override budget &amp; start
+            </button>
+          ) : (
+            <button type="button" disabled={busy} onClick={() => void onStart()}>
+              Start generation
+            </button>
+          )}
         </div>
       )}
 

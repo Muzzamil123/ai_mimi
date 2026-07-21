@@ -39,12 +39,32 @@ module Prompts
       end
 
       log_provider_request(result)
+      record_usage(result)
       # Notify the owner the prompt is ready (post-commit, exactly once).
       SendPromptReadyEmailJob.perform_later(@video.id) if readied
       @prompt
     end
 
     private
+
+    # Ledger the billable prompt generation (Phase 12), keyed by the prompt
+    # version so a retried job never double-counts.
+    def record_usage(result)
+      project = @video.project
+      Usage::Record.call(
+        source: @prompt,
+        provider: result.provider,
+        service_type: "text_generation",
+        model: result.model,
+        user: project&.user,
+        project: project,
+        video: @video,
+        provider_request_id: result.provider_request_id,
+        input_tokens: result.input_tokens,
+        output_tokens: result.output_tokens,
+        provider_reported_cost: result.estimated_cost
+      )
+    end
 
     # Structured, secret-free record of the provider call (never the API key or
     # prompt content) for observability and cost auditing.

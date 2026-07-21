@@ -8,7 +8,7 @@ prompt and four Google Labs renders (two 3:4, two 9:16, 15 seconds).
 This repository is being built **phase by phase** per
 [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md).
 
-> **Current status: Phase 11 — Admin Portal & Operational Controls** (Phases 1–10 complete).
+> **Current status: Phase 12 — Cost Tracking, Usage Limits & Budget Controls** (Phases 1–11 complete).
 > Delivered so far: health/tooling/Docker/CI foundation; JWT auth (access +
 > rotating refresh tokens), registration, login/logout, password reset, email
 > verification, `/me`, RBAC (user/admin), auth rate limiting; **project
@@ -23,8 +23,10 @@ This repository is being built **phase by phase** per
 > APIs across users, projects, characters, videos, prompts, generations, assets,
 > email deliveries, usage, and audit logs; retry/cancel/suspend/reset controls;
 > encrypted, secret-masking platform settings; a maintenance-mode switch; and a
-> React admin section. Cost/budget tracking and production hardening arrive in
-> later phases.
+> React admin section; and now **cost tracking** — a per-call usage ledger with
+> configurable provider pricing, spend dashboards by provider/project/user/date,
+> budget policies (warn/block, admin override), and a pre-generation cost
+> estimate. Production hardening and deployment arrive in later phases.
 
 ---
 
@@ -454,6 +456,40 @@ each call; the full cost dashboard, budgets, and limits are **Phase 12**.
 
 ---
 
+## Cost tracking, usage limits & budget controls (Phase 12)
+
+Every billable provider call is recorded to an authoritative **`ProviderUsage`**
+ledger by `Usage::Record`, idempotently (one row per source, so a retry never
+double-counts). Cost is computed by a **configurable pricing** layer
+(`ProviderPrice`, admin-editable per-unit rates; a model-specific row overrides a
+provider/service default) — falling back to the provider-reported figure when a
+price isn't configured, and tagging each row's `pricing_source`
+(`configured` / `provider_fallback` / `unpriced`) so gaps are visible. Usage is
+recorded at four seams: prompt generation, character-image store, video-variant
+submit, and transcription.
+
+**Budgets** (`BudgetPolicy`) are scoped to the platform, a user, or a project,
+optionally per provider, with daily/monthly limits and a `warn` (soft) or
+`block` (hard) action. `Budgets::Evaluate` sums the current period's ledger spend
+against the applicable policies; `VideoGenerations::StartGeneration` **blocks** a
+batch that would exceed a hard limit (an **admin may override**). Users see the
+**estimated cost + budget status before generating**.
+
+| Method | Path | Purpose |
+|---|---|---|
+| GET | `/api/v1/projects/:id/videos/:vid/generations/estimate` | Pre-generation cost estimate + budget status |
+| GET | `/api/v1/admin/costs?from=&to=` | Cost dashboard (totals, by provider/service/day, averages) |
+| GET | `/api/v1/admin/costs/users` · `/costs/projects` | Spend by user / by project |
+| GET | `/api/v1/admin/costs/export` | Usage ledger CSV export |
+| GET·POST·PATCH·DELETE | `/api/v1/admin/provider_prices` | Configurable pricing CRUD (audited) |
+| GET·POST·PATCH·DELETE | `/api/v1/admin/budget_policies` | Budget policy CRUD (audited) |
+
+Default pricing is seeded (`bin/rails db:seed`, idempotent) and is fully editable
+in the admin portal — verify the seeded rates against current provider pricing
+before relying on them.
+
+---
+
 ## Running tests
 
 **Everything, in containers:**
@@ -540,7 +576,8 @@ the full list. Key variables:
 Completed: authentication & roles → project lifecycle → Gemini character
 generation → email approval → video workspace & transcription → OpenAI prompt
 generation & versioning → Google Labs video generation → asset download,
-validation, storage & delivery → notifications & completion emails → **admin
-portal & operational controls (Phase 11)**.
-Next (see `docs/IMPLEMENTATION_PLAN.md`): cost tracking → security
-hardening → production deployment. Phase 2 adds Flutter mobile apps.
+validation, storage & delivery → notifications & completion emails → admin
+portal & operational controls → **cost tracking, usage limits & budget controls
+(Phase 12)**.
+Next (see `docs/IMPLEMENTATION_PLAN.md`): security & observability hardening →
+production deployment. Phase 2 adds Flutter mobile apps.

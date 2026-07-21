@@ -77,6 +77,8 @@ Rails.application.routes.draw do
           resources :generations, only: %i[index create], controller: "video_generations" do
             collection do
               post :cancel
+              # Pre-generation cost estimate + budget status (Phase 12).
+              get :estimate, to: "video_generations#estimate"
             end
             member do
               post :retry
@@ -112,7 +114,14 @@ Rails.application.routes.draw do
       namespace :admin do
         get "dashboard", to: "dashboard#show"
         get "health", to: "health#show"
-        get "usage", to: "usage#index"
+
+        # Cost tracking, spend tables & usage export (Phase 12).
+        get "costs", to: "costs#index"
+        get "costs/users", to: "costs#users"
+        get "costs/projects", to: "costs#projects"
+        get "costs/export", to: "costs#export"
+        resources :provider_prices, only: %i[index create update destroy]
+        resources :budget_policies, only: %i[index create update destroy]
 
         get   "settings", to: "settings#index"
         patch "settings", to: "settings#update"

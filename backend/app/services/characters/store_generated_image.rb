@@ -23,6 +23,7 @@ module Characters
       dimensions = Media::ImageInfo.dimensions(data)
 
       image = nil
+      created = false
       @character.with_lock do
         # Idempotent under concurrent delivery: if a sibling job already
         # finalized this generation, don't create a duplicate image.
@@ -38,10 +39,31 @@ module Characters
           checksum: Digest::SHA256.hexdigest(data),
           provider_asset_id: @provider_asset_id
         )
+        created = true
         @character.transition_to!(:awaiting_approval, actor: @actor, reason: "image generated")
       end
 
+      record_usage(image) if created
       image
+    end
+
+    private
+
+    # Ledger the billable image generation (Phase 12), keyed by the image so a
+    # retried delivery never double-counts.
+    def record_usage(image)
+      project = @character.project
+      Usage::Record.call(
+        source: image,
+        provider: @character.provider,
+        service_type: "character_image",
+        model: @character.provider_model,
+        user: project&.user,
+        project: project,
+        provider_request_id: @character.provider_job_id,
+        generated_images: 1,
+        provider_reported_cost: @character.estimated_cost
+      )
     end
   end
 end

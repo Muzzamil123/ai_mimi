@@ -66,35 +66,6 @@ export async function getHealth(): Promise<HealthReport> {
   return data
 }
 
-// --- Usage -------------------------------------------------------------------
-
-export interface UsageProviderRow {
-  provider: string | null
-  count: number
-  estimated_cost: number
-  input_tokens?: number
-  output_tokens?: number
-}
-
-export interface UsageServiceSummary {
-  service_type: string
-  total_count: number
-  total_estimated_cost: number
-  providers: UsageProviderRow[]
-}
-
-export interface UsageData {
-  character_generation: UsageServiceSummary
-  prompt_generation: UsageServiceSummary
-  video_generation: UsageServiceSummary
-  note: string
-}
-
-export async function getUsage(): Promise<UsageData> {
-  const { data } = await apiClient.get<UsageData>('/admin/usage')
-  return data
-}
-
 // --- Settings ----------------------------------------------------------------
 
 export type SettingType = 'string' | 'integer' | 'boolean'

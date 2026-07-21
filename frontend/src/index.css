@@ -797,3 +797,89 @@ button.danger:hover {
 .admin-settings-form label .status-badge {
   margin-left: 0.5rem;
 }
+
+/* --- Phase 12: cost tracking, budgets & pricing --- */
+.cost-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0.75rem;
+  margin: 1rem 0;
+}
+.cost-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.9rem 1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+.cost-tile-label {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+.cost-tile-value {
+  font-size: 1.3rem;
+  font-weight: 600;
+}
+.cost-bars {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.cost-bar-row {
+  display: grid;
+  grid-template-columns: minmax(90px, 1fr) 3fr minmax(120px, auto);
+  align-items: center;
+  gap: 0.75rem;
+}
+.cost-bar-track {
+  background: var(--border);
+  border-radius: 6px;
+  height: 12px;
+  overflow: hidden;
+}
+.cost-bar-fill {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  border-radius: 6px;
+  min-width: 2px;
+}
+.cost-bar-value {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.admin-form {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.5rem;
+}
+.admin-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0.75rem 1rem;
+  align-items: end;
+}
+.budget-banner {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.7rem 0.9rem;
+  margin: 0.75rem 0;
+}
+.budget-banner--warning {
+  border-color: var(--unknown);
+  color: var(--unknown);
+}
+.budget-banner--error {
+  border-color: var(--error);
+  color: var(--error);
+}
+.generation-estimate {
+  font-variant-numeric: tabular-nums;
+}

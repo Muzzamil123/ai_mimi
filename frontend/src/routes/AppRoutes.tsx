@@ -8,8 +8,10 @@ import { AdminGenerationsPage } from '../pages/admin/AdminGenerationsPage'
 import { AdminHealthPage } from '../pages/admin/AdminHealthPage'
 import { AdminProjectDetailPage } from '../pages/admin/AdminProjectDetailPage'
 import { AdminProjectsPage } from '../pages/admin/AdminProjectsPage'
+import { AdminBudgetsPage } from '../pages/admin/AdminBudgetsPage'
+import { AdminCostsPage } from '../pages/admin/AdminCostsPage'
+import { AdminPricingPage } from '../pages/admin/AdminPricingPage'
 import { AdminSettingsPage } from '../pages/admin/AdminSettingsPage'
-import { AdminUsagePage } from '../pages/admin/AdminUsagePage'
 import { AdminUsersPage } from '../pages/admin/AdminUsersPage'
 import { AdminVideosPage } from '../pages/admin/AdminVideosPage'
 import { ForgotPasswordPage } from '../pages/auth/ForgotPasswordPage'
@@ -82,7 +84,9 @@ export function AppRoutes() {
             <Route path="videos" element={<AdminVideosPage />} />
             <Route path="generations" element={<AdminGenerationsPage />} />
             <Route path="emails" element={<AdminEmailsPage />} />
-            <Route path="usage" element={<AdminUsagePage />} />
+            <Route path="costs" element={<AdminCostsPage />} />
+            <Route path="budgets" element={<AdminBudgetsPage />} />
+            <Route path="pricing" element={<AdminPricingPage />} />
             <Route path="audit-logs" element={<AdminAuditLogsPage />} />
             <Route path="settings" element={<AdminSettingsPage />} />
             <Route path="health" element={<AdminHealthPage />} />
