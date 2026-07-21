@@ -42,6 +42,8 @@ group :development, :test do
   gem "rspec-rails", "~> 6.1"
   gem "factory_bot_rails", "~> 6.4"
   gem "rubocop-rails-omakase", require: false # Rails-standard linting/formatting
+  gem "brakeman", "~> 6.2", require: false    # static security analysis (Phase 13)
+  gem "bundler-audit", "~> 0.9", require: false # dependency vulnerability scan (Phase 13)
 end
 
 group :development do

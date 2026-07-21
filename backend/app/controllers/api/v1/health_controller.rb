@@ -12,6 +12,23 @@ module Api
 
         render json: HealthBlueprint.render_as_hash(report), status: http_status
       end
+
+      # Liveness: the process is up and serving. No dependency checks, so an
+      # orchestrator never restarts a healthy pod just because a dependency
+      # blips. Always 200.
+      def live
+        render json: { status: "ok" }
+      end
+
+      # Readiness: can this instance serve traffic right now? Checks the
+      # datastores the API needs (database + Redis). 503 keeps it out of the
+      # load-balancer pool until dependencies recover.
+      def ready
+        components = Health::CheckService.call.components.slice(:database, :redis)
+        ready = components.values.all? { |value| value == Health::Report::OK }
+        render json: { status: ready ? "ready" : "not_ready", components: components },
+               status: ready ? :ok : :service_unavailable
+      end
     end
   end
 end

@@ -97,10 +97,45 @@ button:hover {
 }
 
 .app-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
   padding: 1rem 1.5rem;
   border-top: 1px solid var(--border);
   color: var(--muted);
   font-size: 0.85rem;
+}
+
+.app-footer-links {
+  display: flex;
+  gap: 1rem;
+}
+.app-footer-links a {
+  color: var(--muted);
+}
+.app-footer-links a:hover {
+  color: var(--text);
+}
+
+.maintenance-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.7rem 1.5rem;
+  background: color-mix(in srgb, var(--unknown) 18%, var(--surface));
+  border-bottom: 1px solid var(--unknown);
+  color: var(--text);
+  font-size: 0.9rem;
+}
+
+.legal-page {
+  line-height: 1.6;
+}
+.legal-page h2 {
+  margin-top: 1.5rem;
 }
 
 .health-grid {

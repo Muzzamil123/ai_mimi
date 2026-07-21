@@ -8,6 +8,8 @@ module SpeechToTextProviders
   # normalizes the response/errors. This is the only place OpenAI's transcription
   # request/response shape is known.
   class OpenAI < Base
+    include Providers::Breakable
+
     DEFAULT_BASE_URL = "https://api.openai.com".freeze
     DEFAULT_MODEL = "whisper-1".freeze
     DEFAULT_TIMEOUT = 120
@@ -22,6 +24,8 @@ module SpeechToTextProviders
       parse(response, language)
     rescue Net::OpenTimeout, Net::ReadTimeout
       raise TimeoutError
+    rescue Providers::CircuitOpenError => e
+      raise Error.new(e.message, retryable: true)
     rescue Errno::ECONNREFUSED, SocketError => e
       raise Error.new("OpenAI connection error: #{e.message}", retryable: true)
     end
@@ -59,8 +63,8 @@ module SpeechToTextProviders
     private
 
     def post(audio_data, mime_type, language, filename)
-      key = ENV["OPENAI_API_KEY"].to_s
-      raise Error.new("OPENAI_API_KEY is not configured", retryable: false) if key.empty?
+      key = Providers::Credentials.fetch("openai_api_key", env: "OPENAI_API_KEY").to_s
+      raise Error.new("OpenAI API key is not configured", retryable: false) if key.empty?
 
       uri = URI.join("#{base_url}/", "v1/audio/transcriptions")
       http = Net::HTTP.new(uri.host, uri.port)
@@ -74,7 +78,7 @@ module SpeechToTextProviders
       request["Content-Type"] = "multipart/form-data; boundary=#{boundary}"
       request.body = multipart_body(boundary, audio_data, mime_type, language, filename)
 
-      http.request(request)
+      with_circuit("speech_to_text:openai") { http.request(request) }
     end
 
     def multipart_body(boundary, audio_data, mime_type, language, filename)

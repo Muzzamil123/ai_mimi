@@ -1,14 +1,14 @@
-# Records privileged/destructive actions to the audit trail. Included by the
-# admin base controller so every mutating admin endpoint can capture who did
-# what, to which resource, from where. Delegates to Admin::RecordAudit — the
-# single writer of audit rows. Never pass secrets in metadata.
+# Records privileged/destructive and other sensitive actions to the audit
+# trail. Included by the API base controller so any endpoint can capture who did
+# what, to which resource, from where. Delegates to Audit::Record — the single
+# writer of audit rows. Never pass secrets in metadata.
 module Auditable
   extend ActiveSupport::Concern
 
   private
 
   def audit!(action, resource: nil, metadata: {})
-    ::Admin::RecordAudit.call(
+    ::Audit::Record.call(
       actor: current_user,
       action: action,
       resource: resource,

@@ -22,6 +22,8 @@ import { ResetPasswordPage } from '../pages/auth/ResetPasswordPage'
 import { VerifyEmailPage } from '../pages/auth/VerifyEmailPage'
 import { HealthPage } from '../pages/HealthPage'
 import { NotFoundPage } from '../pages/NotFoundPage'
+import { PrivacyPage } from '../pages/legal/PrivacyPage'
+import { TermsPage } from '../pages/legal/TermsPage'
 import { CharacterApprovalPage } from '../pages/approvals/CharacterApprovalPage'
 import { CharacterPage } from '../pages/characters/CharacterPage'
 import { EditProjectPage } from '../pages/projects/EditProjectPage'
@@ -50,6 +52,10 @@ export function AppRoutes() {
         <Route path="forgot-password" element={<ForgotPasswordPage />} />
         <Route path="reset-password" element={<ResetPasswordPage />} />
         <Route path="verify-email" element={<VerifyEmailPage />} />
+
+        {/* Public legal pages */}
+        <Route path="privacy" element={<PrivacyPage />} />
+        <Route path="terms" element={<TermsPage />} />
 
         {/* Public, token-protected character approval (reached from email) */}
         <Route path="approvals/character/:token" element={<CharacterApprovalPage />} />

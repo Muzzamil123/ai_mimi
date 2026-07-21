@@ -12,7 +12,10 @@ module Api
         end
 
         def reset
-          ::Auth::ResetPassword.call(params[:token], params[:password])
+          user = ::Auth::ResetPassword.call(params[:token], params[:password])
+          ::Audit::Record.call(
+            actor: user, action: "auth.password_reset", resource: user, request_context: request_context
+          )
           head :no_content
         end
       end

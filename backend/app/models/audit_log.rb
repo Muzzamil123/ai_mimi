@@ -1,5 +1,6 @@
 # Append-only record of a privileged/destructive action performed through the
-# admin portal (Phase 11). Created via Admin::RecordAudit / the Auditable
+# admin portal (Phase 11) and other sensitive actions (Phase 13). Created via
+# Audit::Record / the Auditable
 # controller concern. Rows are immutable: they are never updated or destroyed by
 # the application. The actor is a polymorphic association (a User admin today)
 # and is intentionally not a hard FK so the trail outlives the actor.

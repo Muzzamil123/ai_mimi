@@ -21,12 +21,16 @@ module Api
       # POST /api/v1/approvals/character/:token/approve
       def approve
         ::Approvals::ApproveViaToken.call(@approval_request)
+        audit!("character.approved_via_token", resource: @approval_request.character,
+                                               metadata: { project_id: @approval_request.project_id })
         render json: ApprovalRequestBlueprint.render_as_hash(@approval_request.reload)
       end
 
       # POST /api/v1/approvals/character/:token/reject
       def reject
         ::Approvals::RejectViaToken.call(@approval_request, feedback: params[:feedback])
+        audit!("character.rejected_via_token", resource: @approval_request.character,
+                                               metadata: { project_id: @approval_request.project_id })
         render json: ApprovalRequestBlueprint.render_as_hash(@approval_request.reload)
       end
 

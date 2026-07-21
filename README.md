@@ -8,7 +8,7 @@ prompt and four Google Labs renders (two 3:4, two 9:16, 15 seconds).
 This repository is being built **phase by phase** per
 [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md).
 
-> **Current status: Phase 12 — Cost Tracking, Usage Limits & Budget Controls** (Phases 1–11 complete).
+> **Current status: Phase 13 — Security, Auditability, Reliability & Observability** (Phases 1–12 complete).
 > Delivered so far: health/tooling/Docker/CI foundation; JWT auth (access +
 > rotating refresh tokens), registration, login/logout, password reset, email
 > verification, `/me`, RBAC (user/admin), auth rate limiting; **project
@@ -26,7 +26,11 @@ This repository is being built **phase by phase** per
 > React admin section; and now **cost tracking** — a per-call usage ledger with
 > configurable provider pricing, spend dashboards by provider/project/user/date,
 > budget policies (warn/block, admin override), and a pre-generation cost
-> estimate. Production hardening and deployment arrive in later phases.
+> estimate; and now **production hardening** — shared-Redis rate limiting,
+> encrypted provider credentials, provider circuit breakers, an account-deletion
+> and data-retention workflow, liveness/readiness probes, request-id tracing,
+> app-wide audit coverage, and Brakeman + bundler-audit in CI. Production
+> deployment is the next phase.
 
 ---
 
@@ -490,6 +494,38 @@ before relying on them.
 
 ---
 
+## Security, reliability & observability (Phase 13)
+
+Production-hardening controls (full detail in
+[`docs/operations/security.md`](docs/operations/security.md) and the
+[operations runbook](docs/operations/runbook.md)):
+
+- **Rate limiting** on a shared Redis store (enforced across all web processes),
+  including a video-generation-start throttle.
+- **Encrypted provider credentials** — `Providers::Credentials` resolves keys
+  from the encrypted `PlatformSetting` first, then ENV; adapters never read raw
+  ENV and secrets are never logged or returned.
+- **Circuit breakers** around every provider HTTP call (shared Redis state,
+  configurable threshold/cooldown) that fail fast when a provider is down.
+- **Account deletion & data retention** — soft-delete + async purge/anonymize;
+  a retention sweep for aged assets (dedupe-safe).
+- **Observability** — `/api/v1/health/live` & `/health/ready` probes, an
+  `X-Request-Id` response header, structured error reporting (`Rails.error`,
+  Sentry-layerable), and a Sidekiq dead-job reporter.
+- **Audit coverage** — the append-only `AuditLog` now covers sensitive *user*
+  actions (failed logins, password resets, account deletion, token approvals)
+  in addition to admin operations.
+- **Automated scanning** — Brakeman + bundler-audit run in CI and block on new
+  findings. Known accepted risk: Rails 7.1 is EOL (tracked follow-up: upgrade to
+  7.2.x); documented in `backend/.bundler-audit.yml` and `config/brakeman.ignore`.
+
+| Method | Path | Purpose |
+|---|---|---|
+| GET | `/api/v1/health/live` | Liveness (always 200) |
+| GET | `/api/v1/health/ready` | Readiness (DB + Redis; 200/503) |
+
+---
+
 ## Running tests
 
 **Everything, in containers:**
@@ -577,7 +613,7 @@ Completed: authentication & roles → project lifecycle → Gemini character
 generation → email approval → video workspace & transcription → OpenAI prompt
 generation & versioning → Google Labs video generation → asset download,
 validation, storage & delivery → notifications & completion emails → admin
-portal & operational controls → **cost tracking, usage limits & budget controls
-(Phase 12)**.
-Next (see `docs/IMPLEMENTATION_PLAN.md`): security & observability hardening →
-production deployment. Phase 2 adds Flutter mobile apps.
+portal & operational controls → cost tracking, usage limits & budget controls →
+**security, auditability, reliability & observability (Phase 13)**.
+Next (see `docs/IMPLEMENTATION_PLAN.md`): production deployment & release
+readiness. Phase 2 adds Flutter mobile apps.

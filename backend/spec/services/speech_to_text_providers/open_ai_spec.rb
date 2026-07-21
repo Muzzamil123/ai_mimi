@@ -60,7 +60,7 @@ RSpec.describe SpeechToTextProviders::OpenAI do
     ENV["OPENAI_API_KEY"] = ""
 
     expect { provider.transcribe(audio_data: "audio", mime_type: "audio/webm") }
-      .to raise_error(SpeechToTextProviders::Error, /OPENAI_API_KEY/)
+      .to raise_error(SpeechToTextProviders::Error, /API key is not configured/)
   end
 
   it "raises without calling the API when the audio is empty" do

@@ -91,6 +91,7 @@ apiClient.interceptors.request.use((config) => {
 // --- Transparent access-token refresh on 401 ---
 const REFRESH_PATH = '/auth/refresh'
 const SESSION_EXPIRED_EVENT = 'auth:session-expired'
+const MAINTENANCE_EVENT = 'app:maintenance'
 
 /** Shape returned by POST /auth/refresh (subset used by the interceptor). */
 interface RefreshTokensResponse {
@@ -152,6 +153,14 @@ apiClient.interceptors.response.use(
       }
     }
 
-    return Promise.reject(normalizeError(error))
+    const normalized = normalizeError(error)
+
+    // Surface platform maintenance (503 + maintenance code) so the shell can show
+    // a banner. The error is still rejected so callers handle it normally.
+    if (normalized.status === 503 && normalized.code === 'maintenance' && typeof window !== 'undefined') {
+      window.dispatchEvent(new Event(MAINTENANCE_EVENT))
+    }
+
+    return Promise.reject(normalized)
   },
 )

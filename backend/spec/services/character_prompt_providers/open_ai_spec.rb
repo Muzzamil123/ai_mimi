@@ -45,6 +45,6 @@ RSpec.describe CharacterPromptProviders::OpenAI do
     ENV["OPENAI_API_KEY"] = ""
 
     expect { provider.generate(character: character) }
-      .to raise_error(CharacterPromptProviders::Error, /OPENAI_API_KEY/)
+      .to raise_error(CharacterPromptProviders::Error, /API key is not configured/)
   end
 end
