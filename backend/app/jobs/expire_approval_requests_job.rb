@@ -11,6 +11,10 @@ class ExpireApprovalRequestsJob < ApplicationJob
     ApprovalRequest.pending.where(expires_at: ..Time.current).find_each do |request|
       request.update!(status: :expired)
       UserMailer.approval_link_expired(request).deliver_later
+      Notifications::RecordDelivery.call(
+        user: request.user, email_type: "approval_link_expired",
+        project: request.project, dedupe_key: "approval_link_expired:#{request.id}"
+      )
     end
   end
 end

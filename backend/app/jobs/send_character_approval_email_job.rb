@@ -16,5 +16,10 @@ class SendCharacterApprovalEmailJob < ApplicationJob
 
     result = Approvals::CreateApprovalRequest.call(character)
     UserMailer.character_approval(character, result.approval_request, result.raw_token).deliver_now
+    Notifications::RecordDelivery.call(
+      user: character.project.user, email_type: "character_ready",
+      project: character.project, dedupe_key: "character_ready:#{character.id}:#{generation_id}",
+      subject: %(Your character for "#{character.project.name}" is ready for approval)
+    )
   end
 end

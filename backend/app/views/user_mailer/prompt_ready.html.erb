@@ -1,0 +1,10 @@
+<h1>Your prompt is ready ✍️</h1>
+
+<p>
+  Hi <%= @user.name %> — the prompt for your video
+  <strong><%= @video.title %></strong> in project <strong><%= @project.name %></strong>
+  has been generated and is ready for you to review, edit, and approve.
+</p>
+
+<p>Review the prompt here:</p>
+<p><a href="<%= @prompt_url %>"><%= @prompt_url %></a></p>

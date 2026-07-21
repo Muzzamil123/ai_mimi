@@ -38,6 +38,12 @@ class Rack::Attack
     req.ip if req.post? && req.path == "/api/v1/webhooks/video_generations"
   end
 
+  # Email-provider delivery-status webhook (signature-verified; throttle as
+  # defence in depth against forged/replayed floods).
+  throttle("webhooks/email_deliveries/ip", limit: 240, period: 60) do |req|
+    req.ip if req.post? && req.path == "/api/v1/webhooks/email_deliveries"
+  end
+
   # Public, token-gated asset/thumbnail/archive downloads. Throttle by IP to blunt
   # token brute force (tokens are signed + expiring, but defence in depth).
   throttle("downloads/ip", limit: 120, period: 60) do |req|

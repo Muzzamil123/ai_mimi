@@ -24,6 +24,18 @@ Rails.application.routes.draw do
       get "me", to: "current_user#show"
       patch "me", to: "current_user#update"
       delete "me", to: "current_user#destroy"
+      get "me/notification_preferences", to: "notification_preferences#show"
+      patch "me/notification_preferences", to: "notification_preferences#update"
+
+      # --- Notification center (tracked workflow emails) ---
+      resources :notifications, only: %i[index] do
+        collection do
+          post :read
+        end
+        member do
+          post :retry
+        end
+      end
 
       # --- Projects ---
       resources :projects, only: %i[index show create update destroy] do
@@ -86,6 +98,7 @@ Rails.application.routes.draw do
       # --- Provider webhooks (public, signature-verified, no auth) ---
       namespace :webhooks do
         post "video_generations", to: "video_generations#create"
+        post "email_deliveries", to: "email_deliveries#create"
       end
 
       # --- Public character approval (token-protected, no auth) ---

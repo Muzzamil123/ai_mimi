@@ -3,6 +3,7 @@ class User < ApplicationRecord
 
   has_many :refresh_tokens, dependent: :destroy
   has_many :projects, dependent: :destroy
+  has_many :email_deliveries, dependent: :destroy
 
   enum :role, { user: 0, admin: 1 }, default: :user
   enum :status, { active: 0, suspended: 1, deleted: 2 }, default: :active, prefix: :status
@@ -41,6 +42,24 @@ class User < ApplicationRecord
 
   def touch_last_login!
     update_column(:last_login_at, Time.current)
+  end
+
+  # Whether the owner wants this (optional) email type. Mandatory types are
+  # always enabled; optional ones default enabled unless disabled in preferences.
+  def email_type_enabled?(email_type)
+    type = email_type.to_s
+    return true unless EmailDelivery::OPTIONAL_TYPES.include?(type)
+
+    notification_preferences[type] != false
+  end
+
+  # Merges preference changes, keeping only optional keys with boolean values.
+  def update_notification_preferences!(prefs)
+    caster = ActiveModel::Type::Boolean.new
+    cleaned = prefs.to_h.stringify_keys
+                   .slice(*EmailDelivery::OPTIONAL_TYPES)
+                   .transform_values { |value| caster.cast(value) }
+    update!(notification_preferences: notification_preferences.merge(cleaned))
   end
 
   private

@@ -20,6 +20,10 @@ module Approvals
 
     def deliver_confirmation
       UserMailer.character_approved(@character.reload).deliver_later
+      Notifications::RecordDelivery.call(
+        user: @character.project.user, email_type: "character_approved",
+        project: @character.project, dedupe_key: "character_approved:#{@character.id}"
+      )
     end
   end
 end

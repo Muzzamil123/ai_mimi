@@ -1,0 +1,12 @@
+Video generation failed
+
+Hi <%= @user.name %> — unfortunately every output for "<%= @video.title %>" in
+project "<%= @project.name %>" failed to generate. You can retry from the portal.
+
+Outputs:
+<% @outputs.each do |output| -%>
+- <%= output[:label] %> — <%= output[:status] %>
+<% end -%>
+
+Retry generation here:
+<%= @generation_url %>

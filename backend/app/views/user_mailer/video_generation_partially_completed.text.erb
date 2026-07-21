@@ -1,0 +1,13 @@
+Some of your videos are ready
+
+Hi <%= @user.name %> — generation for "<%= @video.title %>" in project
+"<%= @project.name %>" finished with some outputs ready and some failed. You can
+retry the failed ones from the portal.
+
+Outputs:
+<% @outputs.each do |output| -%>
+- <%= output[:label] %> — <%= output[:status] %><% if output[:download_url] %> — <%= output[:download_url] %><% end %>
+<% end -%>
+
+Review, retry, and download from your portal:
+<%= @outputs_url %>

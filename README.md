@@ -8,7 +8,7 @@ prompt and four Google Labs renders (two 3:4, two 9:16, 15 seconds).
 This repository is being built **phase by phase** per
 [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md).
 
-> **Current status: Phase 9 — Asset Download, Validation, Storage & Delivery** (Phases 1–8 complete).
+> **Current status: Phase 10 — Notifications & Completion Emails** (Phases 1–9 complete).
 > Delivered so far: health/tooling/Docker/CI foundation; JWT auth (access +
 > rotating refresh tokens), registration, login/logout, password reset, email
 > verification, `/me`, RBAC (user/admin), auth rate limiting; **project
@@ -374,6 +374,35 @@ fresh signed URLs (the "signed URL refresh").
 
 ---
 
+## Notifications & completion emails (Phase 10)
+
+Every workflow email is tracked as an **`EmailDelivery`** and always sent to the
+project owner's **current account email** (never hardcoded). A central
+`Notifications::DeliverEmail` service resolves the recipient, honours the owner's
+**preferences** (optional email types can be disabled), **prevents duplicates**
+(one email per event via a `dedupe_key`), sends, and records the provider message
+id + status. Emails: character ready/approved/rejected, approval-link expired,
+prompt ready, and **video generation started / partially completed / completed /
+failed** — completion emails include the project name, video title, character
+reference, per-output status, a secure portal link, and **signed download links**
+(reusing Phase 9). Triggers fire **post-commit** from the generation pipeline
+(`CreateBatch` → started, `FinalizeVideo` → outcome, `GenerateContent` → prompt
+ready). Failed deliveries are **retryable** (`RetryEmailDeliveryJob`), and a
+signed **email-provider webhook** updates delivery status (delivered/bounced).
+
+An in-app **notification center** shows the owner their tracked events with an
+unread count and mark-as-read; an email-preferences screen toggles optional types.
+
+| Method | Path | Auth | Purpose |
+|---|---|---|---|
+| GET | `/api/v1/notifications` | user | Notification feed + unread count |
+| POST | `/api/v1/notifications/read` | user | Mark read (all or `ids`) |
+| POST | `/api/v1/notifications/:id/retry` | user | Retry a failed delivery |
+| GET / PATCH | `/api/v1/me/notification_preferences` | user | View / update optional-email prefs |
+| POST | `/api/v1/webhooks/email_deliveries` | public (HMAC) | Provider delivery-status callback |
+
+---
+
 ## Running tests
 
 **Everything, in containers:**
@@ -434,6 +463,9 @@ the full list. Key variables:
 | `VIDEO_INSPECTOR` | Media prober (`ffprobe`/`fake`) | `fake` (dev/test), `ffprobe` (prod) |
 | `VIDEO_THUMBNAILER` | Thumbnailer (`ffmpeg`/`fake`) | `fake` (dev/test), `ffmpeg` (prod) |
 | `DOWNLOAD_URL_TTL_SECONDS` | Signed download-URL lifetime | `3600` |
+| `EMAIL_PROVIDER` | Provider name recorded on deliveries | `letter_opener` |
+| `API_PUBLIC_URL` | Backend base URL for download links in emails | `http://localhost:3000` |
+| `EMAIL_WEBHOOK_SECRET` | HMAC secret for email delivery webhooks | — |
 | `OPENAI_TRANSCRIBE_MODEL` | OpenAI transcription model         | `whisper-1`                      |
 | `VIDEO_AUDIO_MAX_BYTES` | Max idea-audio upload size (bytes)   | `26214400` (25 MB)               |
 | `VIDEO_LONG_FORM_ENABLED` | Allow 60–300s durations (else 15s only) | `false`                       |
@@ -456,8 +488,7 @@ the full list. Key variables:
 
 Completed: authentication & roles → project lifecycle → Gemini character
 generation → email approval → video workspace & transcription → OpenAI prompt
-generation & versioning → Google Labs video generation → **asset download,
-validation, storage & delivery (Phase 9)**. Next (see
-`docs/IMPLEMENTATION_PLAN.md`): notifications & completion emails → admin portal →
-cost tracking → security hardening → production deployment. Phase 2 adds Flutter
-mobile apps.
+generation & versioning → Google Labs video generation → asset download,
+validation, storage & delivery → **notifications & completion emails (Phase 10)**.
+Next (see `docs/IMPLEMENTATION_PLAN.md`): admin portal → cost tracking → security
+hardening → production deployment. Phase 2 adds Flutter mobile apps.

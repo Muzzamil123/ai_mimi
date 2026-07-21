@@ -19,6 +19,7 @@ module Prompts
       context = Prompts::BuildContext.call(@video)
       result = @provider.generate_video_prompt(idea: @video.idea_source, context: context)
 
+      readied = false
       @prompt.transaction do
         @prompt.update!(
           content: result.content,
@@ -31,10 +32,15 @@ module Prompts
           failure_reason: nil
         )
         @prompt.transition_to!(:draft)
-        @video.transition_to!(:prompt_ready, actor: @actor, reason: "prompt generated") if @video.generating_prompt?
+        if @video.generating_prompt?
+          @video.transition_to!(:prompt_ready, actor: @actor, reason: "prompt generated")
+          readied = true
+        end
       end
 
       log_provider_request(result)
+      # Notify the owner the prompt is ready (post-commit, exactly once).
+      SendPromptReadyEmailJob.perform_later(@video.id) if readied
       @prompt
     end
 

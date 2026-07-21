@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_07_21_000003) do
+ActiveRecord::Schema[7.1].define(version: 2026_07_21_000004) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "citext"
   enable_extension "plpgsql"
@@ -73,6 +73,31 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_21_000003) do
     t.datetime "updated_at", null: false
     t.index ["project_id"], name: "index_characters_on_project_id_unique", unique: true
     t.index ["status"], name: "index_characters_on_status"
+  end
+
+  create_table "email_deliveries", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.bigint "project_id"
+    t.bigint "video_id"
+    t.string "email_type", null: false
+    t.string "recipient", null: false
+    t.string "subject"
+    t.string "provider"
+    t.string "provider_message_id"
+    t.integer "status", default: 0, null: false
+    t.text "error_message"
+    t.datetime "sent_at"
+    t.datetime "delivered_at"
+    t.datetime "read_at"
+    t.string "dedupe_key"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["dedupe_key"], name: "index_email_deliveries_on_dedupe_key", unique: true
+    t.index ["project_id"], name: "index_email_deliveries_on_project_id"
+    t.index ["provider_message_id"], name: "index_email_deliveries_on_provider_message_id"
+    t.index ["user_id", "created_at"], name: "index_email_deliveries_on_user_id_and_created_at"
+    t.index ["user_id"], name: "index_email_deliveries_on_user_id"
+    t.index ["video_id"], name: "index_email_deliveries_on_video_id"
   end
 
   create_table "project_status_changes", force: :cascade do |t|
@@ -153,6 +178,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_21_000003) do
     t.datetime "last_login_at"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.jsonb "notification_preferences", default: {}, null: false
     t.index ["email"], name: "index_users_on_email", unique: true
   end
 
@@ -252,6 +278,9 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_21_000003) do
   add_foreign_key "approval_requests", "users", on_delete: :cascade
   add_foreign_key "character_images", "characters", on_delete: :cascade
   add_foreign_key "characters", "projects", on_delete: :cascade
+  add_foreign_key "email_deliveries", "projects", on_delete: :nullify
+  add_foreign_key "email_deliveries", "users", on_delete: :cascade
+  add_foreign_key "email_deliveries", "videos", on_delete: :nullify
   add_foreign_key "project_status_changes", "projects", on_delete: :cascade
   add_foreign_key "project_status_changes", "users", column: "actor_id", on_delete: :nullify
   add_foreign_key "projects", "characters", column: "active_character_id", on_delete: :nullify
