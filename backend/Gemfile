@@ -14,6 +14,7 @@ gem "blueprinter", "~> 1.1"  # JSON serialization layer (keeps rendering out of 
 gem "oj", "~> 3.16"          # Fast JSON encoding used by Blueprinter
 gem "rubyzip", "~> 2.3"      # Build download-all archives (Phase 9)
 gem "csv", "~> 3.3"          # Usage CSV export (Phase 12); leaves default gems in Ruby 3.4
+gem "aws-sdk-s3", "~> 1.170" # S3-compatible object storage backend (Phase 14)
 
 # --- Background processing ---
 gem "sidekiq", "~> 7.2"      # Background jobs
