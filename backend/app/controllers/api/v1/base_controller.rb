@@ -8,6 +8,11 @@ module Api
       include Pundit::Authorization
       include TokenResponder
 
+      # When maintenance mode is on, reject mutating requests from ordinary
+      # authenticated users (admins and unauthenticated auth/public flows are
+      # exempt so operators can still sign in and drive the portal).
+      before_action :enforce_maintenance_mode!
+
       rescue_from ActiveRecord::RecordInvalid do |e|
         render_error(:unprocessable_entity, "validation_failed", e.record.errors.full_messages)
       end
@@ -89,6 +94,14 @@ module Api
       end
 
       private
+
+      def enforce_maintenance_mode!
+        return if request.get? || request.head?
+        return if current_user.nil? || current_user.admin?
+        return unless PlatformSetting.get("maintenance_mode")
+
+        render_error(:service_unavailable, "maintenance", "The platform is temporarily unavailable for maintenance")
+      end
 
       def render_error(status, code, messages)
         render json: { error: { code: code, messages: Array(messages) } }, status: status

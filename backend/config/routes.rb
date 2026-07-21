@@ -108,9 +108,51 @@ Rails.application.routes.draw do
       post   "approvals/character/:token/reject",  to: "approvals#reject"
       get    "approvals/character/:token/image",   to: "approvals#image"
 
-      # --- Admin (RBAC; full portal in Phase 11) ---
+      # --- Admin portal (RBAC + audited operational controls; Phase 11) ---
       namespace :admin do
-        resources :users, only: [:index]
+        get "dashboard", to: "dashboard#show"
+        get "health", to: "health#show"
+        get "usage", to: "usage#index"
+
+        get   "settings", to: "settings#index"
+        patch "settings", to: "settings#update"
+
+        resources :users, only: %i[index show] do
+          member do
+            post :suspend
+            post :reactivate
+          end
+        end
+
+        resources :projects, only: %i[index show] do
+          member do
+            post :archive
+            post :reset_character
+            post :retry_character
+          end
+        end
+
+        resources :videos, only: %i[index show] do
+          member do
+            post :retry_prompt
+          end
+        end
+
+        resources :video_generations, only: %i[index] do
+          member do
+            post :retry
+            post :retry_asset
+            post :cancel
+          end
+        end
+
+        resources :email_deliveries, only: %i[index] do
+          member do
+            post :retry
+          end
+        end
+
+        resources :audit_logs, only: %i[index]
       end
     end
   end

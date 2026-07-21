@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_07_21_000004) do
+ActiveRecord::Schema[7.1].define(version: 2026_07_22_000002) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "citext"
   enable_extension "plpgsql"
@@ -33,6 +33,22 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_21_000004) do
     t.index ["status"], name: "index_approval_requests_on_status"
     t.index ["token_digest"], name: "index_approval_requests_on_token_digest", unique: true
     t.index ["user_id"], name: "index_approval_requests_on_user_id"
+  end
+
+  create_table "audit_logs", force: :cascade do |t|
+    t.string "actor_type"
+    t.bigint "actor_id"
+    t.string "action", null: false
+    t.string "resource_type"
+    t.bigint "resource_id"
+    t.jsonb "metadata", default: {}, null: false
+    t.string "ip_address"
+    t.string "user_agent"
+    t.datetime "created_at", null: false
+    t.index ["action"], name: "index_audit_logs_on_action"
+    t.index ["actor_type", "actor_id"], name: "index_audit_logs_on_actor_type_and_actor_id"
+    t.index ["created_at"], name: "index_audit_logs_on_created_at"
+    t.index ["resource_type", "resource_id"], name: "index_audit_logs_on_resource_type_and_resource_id"
   end
 
   create_table "character_images", force: :cascade do |t|
@@ -98,6 +114,14 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_21_000004) do
     t.index ["user_id", "created_at"], name: "index_email_deliveries_on_user_id_and_created_at"
     t.index ["user_id"], name: "index_email_deliveries_on_user_id"
     t.index ["video_id"], name: "index_email_deliveries_on_video_id"
+  end
+
+  create_table "platform_settings", force: :cascade do |t|
+    t.string "key", null: false
+    t.text "value"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["key"], name: "index_platform_settings_on_key", unique: true
   end
 
   create_table "project_status_changes", force: :cascade do |t|
